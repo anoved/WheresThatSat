@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'chatterbot/dsl'
+
+#debug_mode
+verbose
+
+# Ignore our own tweets to prevent a silly cycle of self-replies
+blacklist "wheresthatsat"
+
+# here we build an index of terms to look for, based on satellite names in our
+# library of supported satellites. Currently hard-coded; should be assembled
+# from what we find available to us provided by the TLE updater script.
+satellites = {
+	'"landsat 5"' => "/Users/anoved/Dropbox/Projects/Programming/WheresThatSat/tle/landsat5.tle"
+}
+
+satellites.keys.each do |sat|
+	search sat do |tweet|
+
+		#timestamp = Time.now.getgm.strftime("%Y-%m-%d %H:%M:%S.000000 UTC")		
+		
+		ct = tweet[:created_at].split(' ')
+		hms = ct[4].split(':')
+		created_at_time = Time.gm(ct[3], ct[2], ct[1], hms[0], hms[1], hms[2], 0)
+		#timestamp = created_at_time.strftime("%Y-%m-%d %H:%M:%S.000000 UTC")
+		timestamp = created_at_time.to_f
+		
+		# basic command
+		gtg_cmd = format '/usr/local/bin/gtg --input "%s" --start "%s" --format csv --attributes altitude', satellites[sat], timestamp
+		
+		# if the tweet is georeferenced, pass its coordinates to gtg as the
+		# observer location and ask for elevation/azimuth attributes
+		# geo documented here: https://dev.twitter.com/docs/api/1/get/statuses/show/%3Aid
+		if tweet[:geo] != nil
+			observer_latitude = tweet[:geo][:coordinates][0]
+			observer_longitude = tweet[:geo][:coordinates][1]
+			# append this junk to the pipe; after the pipe, have another conditional to insert obs angle to reply
+			gtg_cmd += format " --observer %s %s --attributes elevation azimuth", observer_latitude, observer_longitude
+		end
+				
+		# run gtg to get the coordinates and attribute information.
+		# needs error handling
+		gtg_pipe = IO.popen(gtg_cmd)
+		gtg_data = gtg_pipe.read.split("\n")
+		gtg_pipe.close
+		
+		# split the output lines into fields, and find the first [only] record
+		gtg_data.collect! {|line| line.split(',')}
+		info = gtg_data.detect {|line| line[0] == '0'}
+		
+		# info pieces that we need for the reply
+		latitude = info[1].to_f
+		longitude = info[2].to_f
+		altitude = info[3].to_f
+		
+		# assemble the basic reply
+		reply_text = format "#USER# When you mentioned %s, it was located above %.4f %s %.4f %s at an altitude of %.2f km.", sat[1..-2], latitude.abs, latitude >= 0 ? "N" : "S", longitude.abs, longitude >= 0 ? "E" : "W", altitude
+		
+		# append observer-specific attributes to the reply if georeferenced
+		if tweet[:geo] != nil
+			elevation = info[4].to_f
+			azimuth = info[5].to_f
+			reply_text += format " (El: %.2f, Az: %.2f)", elevation, azimuth
+		end
+		
+		# post the reply
+		reply reply_text, tweet
+		
+	end
+end
+
+# this logs the time of this run so we'll only see new tweets next time
+update_config
