@@ -12,8 +12,10 @@ blacklist "wheresthatsat"
 # here we build an index of terms to look for, based on satellite names in our
 # library of supported satellites. Currently hard-coded; should be assembled
 # from what we find available to us provided by the TLE updater script.
+# paths are relative to the directory containing this bot script
 satellites = {
-	'"landsat 5"' => "/Users/anoved/Dropbox/Projects/Programming/WheresThatSat/tle/landsat5.tle"
+	'"LANDSAT 5"' => "tle/landsat5.tle",
+	'"LANDSAT 7"' => "tle/landsat7.tle"
 }
 
 satellites.keys.each do |sat|
@@ -28,7 +30,8 @@ satellites.keys.each do |sat|
 		timestamp = created_at_time.to_f
 		
 		# basic command
-		gtg_cmd = format '/usr/local/bin/gtg --input "%s" --start "%s" --format csv --attributes altitude', satellites[sat], timestamp
+		tle_dir = File.expand_path(satellites[sat])
+		gtg_cmd = format '/usr/local/bin/gtg --input "%s" --start "%s" --format csv --attributes altitude', tle_dir, timestamp
 		
 		# if the tweet is georeferenced, pass its coordinates to gtg as the
 		# observer location and ask for elevation/azimuth attributes
@@ -47,19 +50,25 @@ satellites.keys.each do |sat|
 		gtg_pipe.close
 		
 		# split the output lines into fields, and find the first [only] record
+		# should confirm that we got the record successfully
 		gtg_data.collect! {|line| line.split(',')}
 		info = gtg_data.detect {|line| line[0] == '0'}
 		
 		# info pieces that we need for the reply
+		# should confirm that we got all these attributes
 		latitude = info[1].to_f
 		longitude = info[2].to_f
 		altitude = info[3].to_f
 		
 		# assemble the basic reply
+		# we should keep track of the length of the reply, so as not to exceed
+		# the 140 character maximum. Usernames are [mostly] <= 15 characters.
+		# We can round values to a few short places to save space, too.
 		reply_text = format "#USER# When you mentioned %s, it was located above %.4f %s %.4f %s at an altitude of %.2f km.", sat[1..-2], latitude.abs, latitude >= 0 ? "N" : "S", longitude.abs, longitude >= 0 ? "E" : "W", altitude
 		
 		# append observer-specific attributes to the reply if georeferenced
 		if tweet[:geo] != nil
+			# should confirm that we got these attributes
 			elevation = info[4].to_f
 			azimuth = info[5].to_f
 			reply_text += format " (El: %.2f, Az: %.2f)", elevation, azimuth
