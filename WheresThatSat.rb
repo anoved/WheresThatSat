@@ -6,22 +6,13 @@ require 'chatterbot/dsl'
 # for url encoding
 require 'cgi'
 
-debug_mode
+#debug_mode
 verbose
-
 # Ignore our own tweets to prevent a silly cycle of self-replies
 blacklist "wheresthatsat"
 
-def TheresThatSat(satellite_name, satellite_tle, tweet)
+def TheresThatSat(satellite_name, satellite_tle, timestamp, tweet)
 
-	#timestamp = Time.now.getgm.strftime("%Y-%m-%d %H:%M:%S.000000 UTC")		
-	
-	ct = tweet[:created_at].split(' ')
-	hms = ct[4].split(':')
-	created_at_time = Time.gm(ct[3], ct[2], ct[1], hms[0], hms[1], hms[2], 0)
-	#timestamp = created_at_time.strftime("%Y-%m-%d %H:%M:%S.000000 UTC")
-	timestamp = created_at_time.to_f
-	
 	# basic command
 	tle_dir = File.expand_path(satellite_tle)
 	gtg_cmd = format '/usr/local/bin/gtg --input "%s" --start "%s" --format csv --attributes altitude', tle_dir, timestamp
@@ -88,13 +79,30 @@ catalog = {
 	"LANDSAT 7" => "tle/landsat7.tle"
 }
 
-catalog.keys.each do |satellite|
-	search(format '"%s"', satellite) do |tweet|
-		TheresThatSat satellite, catalog[satellite], tweet
+# If responding to unaddressed tweets, we should use a limited subset of the
+# full satellite catalog to avoid confusion about simple/common satellite names.
+#catalog.keys.each do |satellite|
+#	search(format '"%s"', satellite) do |tweet|
+#	
+#		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
+#		tp = tweet[:created_at].split(' ')
+#		hms = tp[4].split(':')
+#		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
+#		
+#		TheresThatSat satellite, catalog[satellite], timestamp, tweet
+#	end
+#end
+
+replies do |tweet|
+	catalog.keys.each do |satellite|
+		if tweet[:text].downcase.include? satellite.downcase
+			
+			# example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
+			tp = tweet[:created_at].split(' ')
+			hms = tp[3].split(':')
+			timestamp = Time.gm(tp[5], tp[1], tp[2], hms[0], hms[1], hms[2], 0).to_f
+			
+			TheresThatSat satellite, catalog[satellite], timestamp, tweet
+		end
 	end
 end
-
-# this logs the time of this run so we'll only see new tweets next time
-# this does occur automatically at_exit - but is needed explicitly if
-# we plan to run a loop ourself.
-#update_config
