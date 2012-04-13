@@ -48,8 +48,8 @@ def TheresThatSat(satellite_name, satellite_tle, timestamp, tweet)
 	# we should keep track of the length of the reply, so as not to exceed
 	# the 140 character maximum. Usernames are [mostly] <= 15 characters.
 	# We can round values to a few short places to save space, too.
-	map_link = format "http://maps.google.com/?q=%s,%s+(%s)&z=2&output=embed", latitude, longitude, CGI.escape(satellite_name)
-	reply_text = format "#USER# When you mentioned %s, it was located above %.3f %s %.3f %s at an altitude of %.1f km. %s", satellite_name, latitude.abs, latitude >= 0 ? "N" : "S", longitude.abs, longitude >= 0 ? "E" : "W", altitude, map_link
+	#map_link = format "http://maps.google.com/?q=%s,%s+(%s)&z=2&output=embed", latitude, longitude, CGI.escape(satellite_name)
+	reply_text = format "#USER# When you mentioned %s, it was located above %.3f %s %.3f %s at an altitude of %.1f km.", satellite_name, latitude.abs, latitude >= 0 ? "N" : "S", longitude.abs, longitude >= 0 ? "E" : "W", altitude
 	
 	# links get converted to t.co links
 	# which are a constant length: 20
@@ -79,27 +79,33 @@ catalog_lines.each do |catalog_line|
 	catalog[name] = path
 end
 
-# If responding to unaddressed tweets, we should use a limited subset of the
-# full satellite catalog to avoid confusion about simple/common satellite names.
-#catalog.keys.each do |satellite|
-#	search(format '"%s"', satellite) do |tweet|
-#		
-#		# search to see if tweet[:text].downcase.include? "@WheresThatSat".downcase
-#		# and if so, skip this tweet - we'll handle it as a reply below
-#
-#		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
-#		tp = tweet[:created_at].split(' ')
-#		hms = tp[4].split(':')
-#		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
-#		
-#		TheresThatSat satellite, catalog[satellite], timestamp, tweet
-#	end
-#end
+# sat_searches.txt contains a list of catalog keys (one per line) to search for
+# - these are the satellites we'll tell people about spontaneously.
+search_file = open "sat_searches.txt"
+search_satellites = search_file.read.split("\n")
+search_file.close
+
+search_satellites.each do |satellite|
+	search(format '"%s"', satellite) do |tweet|
+		
+		# skip search results that mention us; we'll handle those as replies
+		if tweet[:text].match(/@WheresThatSat/i)
+			next
+		end
+		
+		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
+		tp = tweet[:created_at].split(' ')
+		hms = tp[4].split(':')
+		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
+		
+		#puts "#{timestamp} - #{satellite}"
+		TheresThatSat satellite, catalog[satellite], timestamp, tweet
+	end
+end
 
 replies do |tweet|
 	catalog.keys.each do |satellite|
-	
-			if tweet[:text].match(/\b#{satellite}\b/i)
+		if tweet[:text].match(/\b#{satellite}\b/i)
 			
 			# example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
 			tp = tweet[:created_at].split(' ')
