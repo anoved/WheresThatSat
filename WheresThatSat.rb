@@ -98,7 +98,8 @@ end
 
 replies do |tweet|
 	catalog.keys.each do |satellite|
-		if tweet[:text].downcase.include? satellite.downcase
+	
+			if tweet[:text].match(/\b#{satellite}\b/i)
 			
 			# example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
 			tp = tweet[:created_at].split(' ')
