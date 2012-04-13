@@ -70,20 +70,23 @@ def TheresThatSat(satellite_name, satellite_tle, timestamp, tweet)
 
 end
 
-# here we build an index of terms to look for, based on satellite names in our
-# library of supported satellites. Currently hard-coded; should be assembled
-# from what we find available to us provided by the TLE updater script.
-# paths are relative to the directory containing this bot script
-catalog = {
-	"LANDSAT 5" => "tle/landsat5.tle",
-	"LANDSAT 7" => "tle/landsat7.tle"
-}
+catalog_file = open "tle_catalog.txt"
+catalog_lines = catalog_file.read.split("\n")
+catalog_file.close
+catalog = {}
+catalog_lines.each do |catalog_line|
+	name, path = catalog_line.split("\t")
+	catalog[name] = path
+end
 
 # If responding to unaddressed tweets, we should use a limited subset of the
 # full satellite catalog to avoid confusion about simple/common satellite names.
 #catalog.keys.each do |satellite|
 #	search(format '"%s"', satellite) do |tweet|
-#	
+#		
+#		# search to see if tweet[:text].downcase.include? "@WheresThatSat".downcase
+#		# and if so, skip this tweet - we'll handle it as a reply below
+#
 #		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
 #		tp = tweet[:created_at].split(' ')
 #		hms = tp[4].split(':')
