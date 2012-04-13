@@ -54,6 +54,9 @@ tle_urls.each do |tle_url|
 	end
 end
 
+# special cases - extra/popular names
+catalog["International Space Station"] = "tle/ISS.tle"
+
 # write the catalog to file
 catalog_file = open "tle_catalog.txt", "w"
 catalog.keys.each do |key|
