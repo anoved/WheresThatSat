@@ -59,7 +59,7 @@ catalog["International Space Station"] = "tle/ISS.tle"
 
 # write the catalog to file
 catalog_file = open "tle_catalog.txt", "w"
-catalog.keys.each do |key|
+catalog.keys.sort.each do |key|
 	catalog_file.write(format "%s\t%s\n", key, catalog[key])
 end
 catalog_file.close
