@@ -7,7 +7,7 @@ require 'chatterbot/dsl'
 require 'cgi'
 
 #debug_mode
-verbose
+#verbose
 # Ignore our own tweets to prevent a silly cycle of self-replies
 blacklist "wheresthatsat"
 
@@ -89,6 +89,8 @@ search_satellites.each do |satellite|
 	search(format '"%s"', satellite) do |tweet|
 		
 		# skip search results that mention us; we'll handle those as replies
+		# - however, if it mentions us because it's retweeting us, we don't
+		#   really need to reply to it either. I suppose we should check for RT in replies
 		if tweet[:text].match(/@WheresThatSat/i)
 			next
 		end
@@ -98,7 +100,6 @@ search_satellites.each do |satellite|
 		hms = tp[4].split(':')
 		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
 		
-		#puts "#{timestamp} - #{satellite}"
 		TheresThatSat satellite, catalog[satellite], timestamp, tweet
 	end
 end

@@ -1,6 +1,15 @@
 Where's That Sat?
 =================
 
-This is a Twitter bot (based on [Chatterbot](http://muffinlabs.com/chatterbot.html)) that replies to messages which mention certain satellites with a report of the recognized satellite's current location. The report may contain a link to an online map with a marker indicating the current ground location. Alternatively, it may contain an image attachment of a world map showing the satellite's recent orbit track and current location. "Current" refers to the time of the Tweet that mentioned the satellite, which is presumed to be in the "recent" timeframe (past 6-9 days), and thus reasonably compatible with the most current available TLE. (Older Tweets may be ignored.) If the post includes a location information, include relative elevation and azimuth in report (at least if elevation > 0), along with apparent direction of motion.
+[@WheresThatSat](https://twitter.com/#!/wheresthatsat) is a Twitter bot that provides current location information about mentioned satellites. It is based on [Chatterbot](http://muffinlabs.com/chatterbot.html) and [Ground Track Generator](https://github.com/anoved/Ground-Track-Generator).
 
-Chatterbot provides the Twitter integration framework. Ground Track Generator provides part of the satellite location service (although it may be useful to rework it to support direct output of coordinates and attribute data to the command line first). Recent TLE data should be maintained; however, updating the TLE catalog is not the Twitter bot's responsibility. A separate cron job can do that. (Twitter bot will presumably run more frequently thatn TLE updater, which only needs to run once day at most.)
+To-Do
+-----
+
+- Don't reply to retweets of our own Tweets (look for capital "RT" before our name in replies?)
+- some false positive replies for "GOES 7" in response to baseball scores... so and so "goes 7 in 1", etc.
+- parse times in replies
+- parse hash tags in replies as attribute requests
+- allow selective reply to specified public tweets (eg, respond to designated vs all sat mentions)
+- web mapper component
+- heading & illumination/visibility attributes (to-do for gtg)
