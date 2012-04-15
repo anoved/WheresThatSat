@@ -22,19 +22,117 @@
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
 		</script>
 		
+		<script type="text/javascript" src="QueryString.js">
+		</script>
+		
 		<script type="text/javascript">
+						
 			function initialize() {
+				
+				q = new QueryString();
+				//access parameter values with q.value()
+				
+				// create the base map			
 				var mapOptions = {
 					center: new google.maps.LatLng(0, 0),
 					zoom: 2,
-					mapTypeId: google.maps.MapTypeId.TERRAIN
+					mapTypeId: google.maps.MapTypeId.TERRAIN,
+					panControl: true,
+					zoomControl: true,
+					mapTypeControl: false,
+					scaleControl: true,
+					streetViewControl: false,
+					overviewMapControl: false
 				}
 				var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+				
+				// position logo on the map as a custom control
+				var wtsBadgeControl = document.getElementById("wts_badge");
+				map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsBadgeControl);
+				
+				// create a polyline of the ground track
+				var tracePoints = q.values('ll');
+				var traceLatLngs = []
+				for (var i = 0; i < tracePoints.length; i++) {
+					var tll = tracePoints[i].split(',');
+					traceLatLngs.push(new google.maps.LatLng(parseFloat(tll[0]), parseFloat(tll[1])));
+				}
+				var tracePolyline = new google.maps.Polyline({
+					path: traceLatLngs,
+					strokeOpacity: 1.0,
+					strokeColor: "#008800",
+					strokeWeight: 8,
+					geodesic: false,
+					clickable: false,
+					map: map
+				});
+				
+				// create a marker for the focal ground track point
+				if (q.exists('fll')) {
+					
+					var ll = q.value('fll').split(',');
+					var locLatLng = new google.maps.LatLng(parseFloat(ll[0]), parseFloat(ll[1]));
+					
+					var locName;
+					if (q.exists('name'))
+						locName = q.value('name');
+					else
+						locName = "My Satellite";
+						
+					var loc = new google.maps.Marker({
+						position: locLatLng,
+						title: locName,
+						flat: true,
+						map: map
+					});
+					
+					// create an attribute info window
+					var locInfoString = "<h2>" + locName + "</h2>";
+					if (q.exists('altitude')) {
+						locInfoString += "<p>Altitude: " + q.value('altitude') + " km</p>";
+					}
+					if (q.exists('timestamp')) {
+						locInfoString += "<p>Timestamp: " + q.value('timestamp') + "</p>";
+					}
+					var locInfo = new google.maps.InfoWindow({
+						content: locInfoString
+					});
+					
+					// display the info window by default
+					locInfo.open(map, loc);
+					
+					// toggle the info window when the marker is clicked
+					google.maps.event.addListener(loc, 'click', function() {
+						locInfo.open(map, loc);
+					});
+				}
+				
+				if (q.exists('oll')) {
+					var oll = q.value('oll').split(',');
+					var obsLatLng = new google.maps.LatLng(parseFloat(oll[0]), parseFloat(oll[1]));
+					// use twitter mentioner's name as observer title
+					var obsLoc = new google.maps.Marker({
+						position: obsLatLng,
+						title: "Observer",
+						flat: true,
+						map: map
+					});
+					var obsInfo = new google.maps.InfoWindow({
+						content: "Observer is here!"
+					});
+					obsInfo.open(map,obsLoc);
+					google.maps.event.addListener(obsLoc, 'click', function() {
+						obsInfo.open(map, obsLoc);
+					});
+				}
 			}
 		</script>
 		
 	</head>
 	<body onload="initialize()">
 		<div id="map_canvas"></div>
+		<div id="wts_badge">
+			<a href="http://twitter.com/WheresThatSat"><img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" /></a>
+		</div>
 	</body>
 </html>
