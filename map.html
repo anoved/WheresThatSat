@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		
+		<title>Where's That Sat Map</title>
+		
+		<style type="text/css">
+			html {
+				height: 100%;
+			}
+			body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			#map_canvas {
+				height: 100%;
+				width: 100%;
+			}
+		</style>
+		
+		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
+		</script>
+		
+		<script type="text/javascript">
+			function initialize() {
+				var mapOptions = {
+					center: new google.maps.LatLng(0, 0),
+					zoom: 2,
+					mapTypeId: google.maps.MapTypeId.TERRAIN
+				}
+				var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+			}
+		</script>
+		
+	</head>
+	<body onload="initialize()">
+		<div id="map_canvas"></div>
+	</body>
+</html>
