@@ -70,7 +70,7 @@ def TheresThatSat(satellite_name, satellite_tle, timestamp, tweet)
 
 end
 
-catalog_file = open "tle_catalog.txt"
+catalog_file = open "config/catalog.txt"
 catalog_lines = catalog_file.read.split("\n")
 catalog_file.close
 catalog = {}
@@ -79,9 +79,9 @@ catalog_lines.each do |catalog_line|
 	catalog[name] = path
 end
 
-# sat_searches.txt contains a list of catalog keys (one per line) to search for
+# config/sat_searches.txt contains a list of catalog keys (one per line) to search for
 # - these are the satellites we'll tell people about spontaneously.
-search_file = open "sat_searches.txt"
+search_file = open "config/sat_searches.txt"
 search_satellites = search_file.read.split("\n")
 search_file.close
 

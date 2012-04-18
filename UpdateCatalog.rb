@@ -7,7 +7,7 @@
 require 'open-uri'
 
 # load the list of TLE lists to load
-fsources = open "tle_sources.txt"
+fsources = open "config/tle_sources.txt"
 tle_urls = fsources.read.split("\n")
 fsources.close
 
@@ -58,7 +58,7 @@ end
 catalog["International Space Station"] = "tle/ISS.tle"
 
 # write the catalog to file
-catalog_file = open "tle_catalog.txt", "w"
+catalog_file = open "config/catalog.txt", "w"
 catalog.keys.sort.each do |key|
 	catalog_file.write(format "%s\t%s\n", key, catalog[key])
 end
