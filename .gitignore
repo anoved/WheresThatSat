@@ -1,3 +1,9 @@
-WheresThatSat.yml
-/chatterbot
+# TLE catalog is automatically generated and may change frequently.
+tle_catalog.txt
 /tle
+
+# Bot configuration file contains API keys
+WheresThatSat.yml
+
+# Reference copy of Chatterbot source code
+/chatterbot
