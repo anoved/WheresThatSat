@@ -17,10 +17,19 @@
 				height: 100%;
 				width: 100%;
 			}
+			#wts_logo {
+				padding: 2px;
+			}
+			/*#wts_twitter {
+				padding: 10px;
+			}*/
 		</style>
 		
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
 		</script>
+				
+		<!-- <script src="http://platform.twitter.com/widgets.js" charset="utf-8">
+		</script> -->
 		
 		<script type="text/javascript" src="QueryString.js">
 		</script>
@@ -28,111 +37,233 @@
 		<script type="text/javascript">
 						
 			function initialize() {
-				
-				q = new QueryString();
-				//access parameter values with q.value()
-				
-				// create the base map			
-				var mapOptions = {
-					center: new google.maps.LatLng(0, 0),
-					zoom: 2,
-					mapTypeId: google.maps.MapTypeId.TERRAIN,
-					panControl: true,
-					zoomControl: true,
-					mapTypeControl: false,
-					scaleControl: true,
-					streetViewControl: false,
-					overviewMapControl: false
-				}
-				var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-				
-				// position logo on the map as a custom control
-				var wtsBadgeControl = document.getElementById("wts_badge");
-				map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsBadgeControl);
-				
-				// create a polyline of the ground track
-				var tracePoints = q.values('ll');
-				var traceLatLngs = []
-				for (var i = 0; i < tracePoints.length; i++) {
-					var tll = tracePoints[i].split(',');
-					traceLatLngs.push(new google.maps.LatLng(parseFloat(tll[0]), parseFloat(tll[1])));
-				}
-				var tracePolyline = new google.maps.Polyline({
-					path: traceLatLngs,
-					strokeOpacity: 1.0,
-					strokeColor: "#008800",
-					strokeWeight: 8,
-					geodesic: false,
-					clickable: false,
-					map: map
+								
+				// Create the basemap.
+				var map = new google.maps.Map(document.getElementById("map_canvas"), {
+						center: new google.maps.LatLng(0, 0),
+						zoom: 2,
+						mapTypeId: google.maps.MapTypeId.TERRAIN,
+						panControl: true,
+						zoomControl: true,
+						mapTypeControl: true,
+						scaleControl: true,
+						streetViewControl: false,
+						overviewMapControl: true,
+						overviewMapControlOptions: {
+							opened: true
+						}
 				});
 				
-				// create a marker for the focal ground track point
-				if (q.exists('fll')) {
+				// Cloud layer (requires &libraries=weather in script request)
+				//var cloudLayer = new google.maps.weather.CloudLayer();
+				//cloudLayer.setMap(map);
+				
+				// Add the @WheresThatSat link logo as a control.
+				var wtsLogoControl = document.getElementById("wts_logo");
+				map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsLogoControl);
+
+				//var wtsTwitterControl = document.getElementById("wts_twitter");
+				//map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(wtsTwitterControl);
+
+				
+				// Trace, Observer, Mention, and Reply may be drawn separately.
+				// However, all required parameters must be defined for each to be drawn.
+				// Conventionally, we expect trace to be always displayed.
+				// We set up and display the basemap in any case. We may adjust its zoom/center
+				// to focus on the trace region, but by default show the whole world.
+				
+				// Parameters expected for trace:
+				// - ll latitude,longitude (multiple)
+				// - t1	trace start time (time of first ll; may be before mt)
+				// - t2	trace end time (time of last ll; may be after rt)
+				// - sn	satellite name
+				
+				// Parameters required for Observer (optional):
+				// - ol	observer latitude,longitude
+				// - on	observer name (Twitter handle?)
+				
+				// Required Mention marker parameters:
+				// - ml	mention latitude,longitude (recall our input points are wgs72, not GM wgs84)
+				// - ma	mention altitude (km from reference ellipsoid)
+				// - mh	mention heading (degrees clockwise from north)
+				// - ms	mention speed (km/s)
+				// - mt	mention time (unix timestamp; use with Date(mt*1000)
+				
+				// Optional Mention marker parameters:
+				// - mw	mention Tweet status ID
+				
+				// Optional Mention marker parameters (required if Observer is specified):
+				// - mi	mention illumination (0 illuminated, 1 penumbral shadow, 2 umbral shadow)
+				// - me	mention elevation (from observer)
+				// - mz	mention azimuth (from observer)
+				// - mo	mention solar elevation (from observer)
+				
+				// Required Reply marker parameters:
+				// - rl	reply latitude,longitude
+				// - ra	reply altitude (km)
+				// - rh reply heading (degrees)
+				// - rs reply speed (km/s)
+				// - rt reply time (unix time)
+				
+				// Optional Reply marker parameters:
+				// - rw reply Tweet status ID
+				
+				// Optional Reply marker parameters (required if Observer is specified):
+				// - ri	mention illumination (0 illuminated, 1 penumbral shadow, 2 umbral shadow)
+				// - re	mention elevation (from observer)
+				// - rz	mention azimuth (from observer)
+				// - ro	mention solar elevation (from observer)
+				
+				// Tweet IDs alone are enough to embed tweet text via Twitter's oEmbed API endpoint. Eg:
+				// https://api.twitter.com/1/statuses/oembed.json?id=193038234438205441
+
+				q = new QueryString();
+				
+				// 
+				var satelliteName;
+				if (q.exists('sn')) {
+					satelliteName = q.value('sn');
+				} else {
+					satelliteName = 'the satellite';
+				}
+				
+				// Create polyline to represent ground track.
+				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
 					
-					var ll = q.value('fll').split(',');
-					var locLatLng = new google.maps.LatLng(parseFloat(ll[0]), parseFloat(ll[1]));
+					var traceStartTime = new Date(parseInt(q.value('t1')) * 1000);
+					var traceEndTime   = new Date(parseInt(q.value('t2')) * 1000);
 					
-					var locName;
-					if (q.exists('name'))
-						locName = q.value('name');
-					else
-						locName = "My Satellite";
-						
-					var loc = new google.maps.Marker({
-						position: locLatLng,
-						title: locName,
-						flat: true,
-						map: map
+					// Assemble list of ground track coordinates from ll parameter strings.
+					var traceParameters = q.values('ll');
+					var traceCoordinates = [];
+					var traceExtent = new google.maps.LatLngBounds();
+					for (var i = 0; i < traceParameters.length; i++) {
+						var latlon = traceParameters[i].split(',');
+						var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+						traceExtent.extend(point);
+						traceCoordinates.push(point);
+					}
+					
+					// Create the ground track and place it on the map
+					var trace = new google.maps.Polyline({
+							path: traceCoordinates,
+							strokeOpacity: 1.0,
+							strokeColor: "#008800",
+							strokeWeight: 8,
+							geodesic: false,
+							clickable: false,
+							map: map
 					});
 					
-					// create an attribute info window
-					var locInfoString = "<h2>" + locName + "</h2>";
-					if (q.exists('altitude')) {
-						locInfoString += "<p>Altitude: " + q.value('altitude') + " km</p>";
-					}
-					if (q.exists('timestamp')) {
-						locInfoString += "<p>Timestamp: " + q.value('timestamp') + "</p>";
-					}
-					var locInfo = new google.maps.InfoWindow({
-						content: locInfoString
-					});
+					// Adjust map extent to focus on ground track.
+					map.fitBounds(traceExtent);
 					
-					// display the info window by default
-					locInfo.open(map, loc);
-					
-					// toggle the info window when the marker is clicked
-					google.maps.event.addListener(loc, 'click', function() {
-						locInfo.open(map, loc);
+					var traceCaption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
+					var footer = document.getElementById("footer");
+					footer.innerHTML = traceCaption;
+				}
+				
+				// Create marker to represent Observer position.
+				if (q.exists('ol') && q.exists('on')) {
+					var observerLabel = q.value('on');	
+					var latlon = q.value('ol').split(',');
+					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+					var observerMarker = new google.maps.Marker({
+							position: point,
+							title: observerLabel,
+							flat: true,
+							map: map
 					});
 				}
 				
-				if (q.exists('oll')) {
-					var oll = q.value('oll').split(',');
-					var obsLatLng = new google.maps.LatLng(parseFloat(oll[0]), parseFloat(oll[1]));
-					// use twitter mentioner's name as observer title
-					var obsLoc = new google.maps.Marker({
-						position: obsLatLng,
-						title: "Observer",
-						flat: true,
-						map: map
+				// Create marker to represent Mention position.
+				if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
+					
+					var mentionAltitude = parseFloat(q.value('ma'));
+					var mentionHeading = parseFloat(q.value('mh'));
+					var mentionSpeed = parseFloat(q.value('ms'));
+					var mentionTime = new Date(parseInt(q.value('mt')) * 1000);
+					
+					// select a custom icon or apply rotation to indicate heading
+					var latlon = q.value('ml').split(',');
+					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+					var mentionMarker = new google.maps.Marker({
+							position: point,
+							title: mentionTime.toTimeString(),
+							flat: true,
+							map: map
 					});
-					var obsInfo = new google.maps.InfoWindow({
-						content: "Observer is here!"
+					
+					var mentionCaption = "<ul>" +
+						'<li>Time: ' + mentionTime.toTimeString() + '</li>' +
+						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
+						'<li>Altitude: ' + mentionAltitude + ' km</li>' +
+						'<li>Speed: ' + mentionSpeed + ' km/s</li>' +
+						'<li>Heading: ' + mentionHeading + ' degrees</li>' +
+						'</ul>';
+					
+					var mentionInfoWindow = new google.maps.InfoWindow({
+							content: mentionCaption
 					});
-					obsInfo.open(map,obsLoc);
-					google.maps.event.addListener(obsLoc, 'click', function() {
-						obsInfo.open(map, obsLoc);
+					google.maps.event.addListener(mentionMarker, 'click', function() {
+							mentionInfoWindow.open(map, mentionMarker);
 					});
+					
+					// While assembilng this info div,
+					// if (q.exists('mw') then embed/link the mention tweet
+					// same with mi/me/mz/mo observer attributes.
 				}
+				
+				// Create marker to represent Reply position.
+				if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
+					
+					var replyAltitude = parseFloat(q.value('ra'));
+					var replyHeading = parseFloat(q.value('rh'));
+					var replySpeed = parseFloat(q.value('rs'));
+					var replyTime = new Date(parseInt(q.value('rt')) * 1000);
+					
+					// select a custom icon or apply rotation to indicate heading
+					var latlon = q.value('rl').split(',');
+					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+					var replyMarker = new google.maps.Marker({
+							position: point,
+							title: replyTime.toTimeString(),
+							flat: true,
+							map: map
+					});
+			
+			
+					var replyCaption = "<ul>" +
+						'<li>Time: ' + replyTime.toTimeString() + '</li>' +
+						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
+						'<li>Altitude: ' + replyAltitude + ' km</li>' +
+						'<li>Speed: ' + replySpeed + ' km/s</li>' +
+						'<li>Heading: ' + replyHeading + ' degrees</li>' +
+						'</ul>';
+					
+					var replyInfoWindow = new google.maps.InfoWindow({
+							content: replyCaption
+					});
+					google.maps.event.addListener(replyMarker, 'click', function() {
+							replyInfoWindow.open(map, replyMarker);
+					});
+			
+				}
+				
+				
 			}
 		</script>
 		
 	</head>
 	<body onload="initialize()">
 		<div id="map_canvas"></div>
-		<div id="wts_badge">
-			<a href="http://twitter.com/WheresThatSat"><img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" /></a>
+		<div id="wts_logo">
+			<img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" />
+		</div>
+		<!-- <div id="wts_twitter">
+			<a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
+		</div> -->
+		<div id="footer">
 		</div>
 	</body>
 </html>
