@@ -72,11 +72,13 @@
 				// We set up and display the basemap in any case. We may adjust its zoom/center
 				// to focus on the trace region, but by default show the whole world.
 				
+				// Optional global parameters:
+				// - sn	satellite name
+				
 				// Parameters expected for trace:
 				// - ll latitude,longitude (multiple)
 				// - t1	trace start time (time of first ll; may be before mt)
 				// - t2	trace end time (time of last ll; may be after rt)
-				// - sn	satellite name
 				
 				// Parameters required for Observer (optional):
 				// - ol	observer latitude,longitude
@@ -159,6 +161,9 @@
 					map.fitBounds(traceExtent);
 					
 					var traceCaption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
+					if (document.referrer != '') {
+						traceCaption += '<p>Referrer: ' + document.referrer + '</p>';
+					}
 					var footer = document.getElementById("footer");
 					footer.innerHTML = traceCaption;
 				}
