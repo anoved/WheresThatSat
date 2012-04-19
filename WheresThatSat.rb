@@ -8,6 +8,7 @@ require 'cgi'
 
 #debug_mode
 #verbose
+
 # Ignore our own tweets to prevent a silly cycle of self-replies
 blacklist "wheresthatsat"
 
@@ -79,30 +80,30 @@ catalog_lines.each do |catalog_line|
 	catalog[name] = path
 end
 
-# config/sat_searches.txt contains a list of catalog keys (one per line) to search for
-# - these are the satellites we'll tell people about spontaneously.
-search_file = open "config/sat_searches.txt"
-search_satellites = search_file.read.split("\n")
-search_file.close
-
-search_satellites.each do |satellite|
-	search(format '"%s"', satellite) do |tweet|
-		
-		# skip search results that mention us; we'll handle those as replies
-		# - however, if it mentions us because it's retweeting us, we don't
-		#   really need to reply to it either. I suppose we should check for RT in replies
-		if tweet[:text].match(/@WheresThatSat/i)
-			next
-		end
-		
-		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
-		tp = tweet[:created_at].split(' ')
-		hms = tp[4].split(':')
-		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
-		
-		TheresThatSat satellite, catalog[satellite], timestamp, tweet
-	end
-end
+# # config/sat_searches.txt contains a list of catalog keys (one per line) to search for
+# # - these are the satellites we'll tell people about spontaneously.
+# search_file = open "config/sat_searches.txt"
+# search_satellites = search_file.read.split("\n")
+# search_file.close
+# 
+# search_satellites.each do |satellite|
+# 	search(format '"%s"', satellite) do |tweet|
+# 		
+# 		# skip search results that mention us; we'll handle those as replies
+# 		# - however, if it mentions us because it's retweeting us, we don't
+# 		#   really need to reply to it either. I suppose we should check for RT in replies
+# 		if tweet[:text].match(/@WheresThatSat/i)
+# 			next
+# 		end
+# 		
+# 		# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
+# 		tp = tweet[:created_at].split(' ')
+# 		hms = tp[4].split(':')
+# 		timestamp = Time.gm(tp[3], tp[2], tp[1], hms[0], hms[1], hms[2], 0).to_f
+# 		
+# 		TheresThatSat satellite, catalog[satellite], timestamp, tweet
+# 	end
+# end
 
 replies do |tweet|
 	catalog.keys.each do |satellite|
