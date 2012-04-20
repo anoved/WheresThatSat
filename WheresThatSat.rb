@@ -37,7 +37,7 @@ end
 #
 def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, is_geo, geo_lat, geo_lon)
 	
-	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%s', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
+	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
 	
 	# trace
 	trace_start_time = mention_time - (4 * 60)
