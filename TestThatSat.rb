@@ -23,35 +23,64 @@ def GoGoGTG(cmd)
 	return gtg_data.split("\n").collect {|record| record.split(',')}
 end
 
-def TheresThatSat(satellite_name, mention_time, response_time, geo_boolean, geo_lat, geo_lon)
+
+
+def TheresThatSat(satellite_name, mention_time, response_time, geo_given, geo_lat=0, geo_lon=0)
 	
 	tle_path = File.expand_path($catalog[satellite_name])
-	wts_url = format 'http://wheresthatsat.com/map.html?sn=%s', CGI.escape(satellite_name)
+	wts_url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s', CGI.escape(satellite_name), CGI.escape('anoved')
 	
 	# trace
 
 	wts_url += format '&t1=%d&t2=%d', mention_time, response_time
-	trace_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d-5m" --end "%d+5m" --interval 1m', tle_path, mention_time, response_time
+	trace_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d-4m" --end "%d+4m" --interval 2m', tle_path, mention_time, response_time
 	trace_data = GoGoGTG(trace_cmd)
 	trace_data.each {|line|
 		wts_url += format '&ll=%.4f,%.4f', line[1], line[2]
 	}
 	
+	# observer
+	
+	if (geo_given)
+		
+		# twitter mentioner username as observer name
+		wts_url += format '&ol=%.4f,%.4f', geo_lat, geo_lon
+		
+	end
+	
 	# mention
 	
 	mention_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
+	
+	if (geo_given)
+		mention_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo_lat, geo_lon
+	end
+	
 	mention_data = GoGoGTG(mention_cmd)
 	m = mention_data[0]
 	wts_url += format '&ml=%.4f,%.4f&ma=%f&ms=%f&mh=%f&mt=%d', m[1], m[2], m[3], m[4], m[5], mention_time
 	
+	if (geo_given)
+		wts_url += format '&mi=%d&me=%f&mz=%f&mo=%f', m[6], m[7], m[8], m[9]
+	end
+	
 	# response
+	# mention and response code is essentially the same
 	
 	reply_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
+	
+	if (geo_given)
+		reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo_lat, geo_lon
+	end
+	
 	reply_data = GoGoGTG(reply_cmd)
 	r = reply_data[0]
 	wts_url += format '&rl=%.4f,%.4f&ra=%f&rs=%f&rh=%f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
 	
-	
+	if (geo_given)
+		wts_url += format '&ri=%d&re=%f&rz=%f&ro=%f', r[6], r[7], r[8], r[9]
+	end
+		
 	puts wts_url
 		
 end
@@ -71,5 +100,8 @@ catalog_lines.each do |catalog_line|
 	$catalog[name] = path
 end
 
+
 # use .to_i to get second-based times from Ruby Time objects
-TheresThatSat("ISS", 1334872442, 1334873042, )
+
+#http://maps.google.com/?ll=38.130236,15.375366&spn=3.745917,8.096924&t=h&z=8
+TheresThatSat("ISS", 1334872442, 1334873042, true, 38.130236, 15.375366)
