@@ -42,7 +42,7 @@
 				var map = new google.maps.Map(document.getElementById("map_canvas"), {
 						center: new google.maps.LatLng(0, 0),
 						zoom: 2,
-						mapTypeId: google.maps.MapTypeId.TERRAIN,
+						mapTypeId: google.maps.MapTypeId.ROADMAP,
 						panControl: true,
 						zoomControl: true,
 						mapTypeControl: true,
@@ -65,59 +65,6 @@
 				//var wtsTwitterControl = document.getElementById("wts_twitter");
 				//map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(wtsTwitterControl);
 
-				
-				// Trace, Observer, Mention, and Reply may be drawn separately.
-				// However, all required parameters must be defined for each to be drawn.
-				// Conventionally, we expect trace to be always displayed.
-				// We set up and display the basemap in any case. We may adjust its zoom/center
-				// to focus on the trace region, but by default show the whole world.
-				
-				// Optional global parameters:
-				// - sn	satellite name
-				
-				// Parameters expected for trace:
-				// - ll latitude,longitude (multiple)
-				// - t1	trace start time (time of first ll; may be before mt)
-				// - t2	trace end time (time of last ll; may be after rt)
-				
-				// Parameters required for Observer (optional):
-				// - ol	observer latitude,longitude
-				// - on	observer name (Twitter handle?)
-				
-				// Required Mention marker parameters:
-				// - ml	mention latitude,longitude (recall our input points are wgs72, not GM wgs84)
-				// - ma	mention altitude (km from reference ellipsoid)
-				// - mh	mention heading (degrees clockwise from north)
-				// - ms	mention speed (km/s)
-				// - mt	mention time (unix timestamp; use with Date(mt*1000)
-				
-				// Optional Mention marker parameters:
-				// - mw	mention Tweet status ID
-				
-				// Optional Mention marker parameters (required if Observer is specified):
-				// - mi	mention illumination (0 illuminated, 1 penumbral shadow, 2 umbral shadow)
-				// - me	mention elevation (from observer)
-				// - mz	mention azimuth (from observer)
-				// - mo	mention solar elevation (from observer)
-				
-				// Required Reply marker parameters:
-				// - rl	reply latitude,longitude
-				// - ra	reply altitude (km)
-				// - rh reply heading (degrees)
-				// - rs reply speed (km/s)
-				// - rt reply time (unix time)
-				
-				// Optional Reply marker parameters:
-				// - rw reply Tweet status ID
-				
-				// Optional Reply marker parameters (required if Observer is specified):
-				// - ri	mention illumination (0 illuminated, 1 penumbral shadow, 2 umbral shadow)
-				// - re	mention elevation (from observer)
-				// - rz	mention azimuth (from observer)
-				// - ro	mention solar elevation (from observer)
-				
-				// Tweet IDs alone are enough to embed tweet text via Twitter's oEmbed API endpoint. Eg:
-				// https://api.twitter.com/1/statuses/oembed.json?id=193038234438205441
 
 				q = new QueryString();
 				
@@ -127,6 +74,20 @@
 					satelliteName = q.value('sn');
 				} else {
 					satelliteName = 'the satellite';
+				}
+				
+				var userName;
+				if (q.exists('un')) {
+					userName = q.value('un');
+				} else {
+					userName = 'you';
+				}
+				
+				var tweetID;
+				if (q.exists('ut')) {
+					tweetID = q.value('ut');
+				} else {
+					tweetID = 0;
 				}
 				
 				// Create polyline to represent ground track.
@@ -152,7 +113,7 @@
 							strokeOpacity: 1.0,
 							strokeColor: "#008800",
 							strokeWeight: 8,
-							geodesic: false,
+							geodesic: true,
 							clickable: false,
 							map: map
 					});
@@ -169,16 +130,17 @@
 				}
 				
 				// Create marker to represent Observer position.
-				if (q.exists('ol') && q.exists('on')) {
-					var observerLabel = q.value('on');	
+				if (q.exists('ol')) {	
 					var latlon = q.value('ol').split(',');
 					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
 					var observerMarker = new google.maps.Marker({
 							position: point,
-							title: observerLabel,
+							animation: google.maps.Animation.DROP,
+							title: userName,
 							flat: true,
 							map: map
 					});
+					// icon: 'https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini',
 				}
 				
 				// Create marker to represent Mention position.
@@ -207,16 +169,36 @@
 						'<li>Heading: ' + mentionHeading + ' degrees</li>' +
 						'</ul>';
 					
+										
+					if (q.exists('mi') && q.exists('me') && q.exists('mz') && q.exists('mo')) {
+						
+						var illumination = parseInt(q.value('mi'));
+						var elevation = parseFloat(q.value('me'));
+						var azimuth = parseFloat(q.value('mz'));
+						var solarelev = parseFloat(q.value('mo'));
+						
+						if (illumination == 0 && elevation > 0 && solarelev < -6) {
+							mentionCaption += '<p>' + satelliteName + ' was <strong>potentially visible</strong> to ' + userName + ' at this point.</p>';
+						} else {
+							mentionCaption += '<p>' + satelliteName + ' was probably <strong>not</strong> visible to ' + userName + ' at this point.</p>';
+						}
+						
+						mentionCaption += '<ul>' +
+								'<li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
+								'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
+								'<li>Satellite illumination: ' + illumination + '</li>' +
+								'<li>Solar elevation: ' + solarelev + '</li>' +
+								'</ul>';			
+					}
+					
 					var mentionInfoWindow = new google.maps.InfoWindow({
 							content: mentionCaption
 					});
 					google.maps.event.addListener(mentionMarker, 'click', function() {
 							mentionInfoWindow.open(map, mentionMarker);
 					});
+
 					
-					// While assembilng this info div,
-					// if (q.exists('mw') then embed/link the mention tweet
-					// same with mi/me/mz/mo observer attributes.
 				}
 				
 				// Create marker to represent Reply position.
@@ -245,6 +227,29 @@
 						'<li>Speed: ' + replySpeed + ' km/s</li>' +
 						'<li>Heading: ' + replyHeading + ' degrees</li>' +
 						'</ul>';
+
+
+					if (q.exists('ri') && q.exists('re') && q.exists('rz') && q.exists('ro')) {
+						
+						var illumination = parseInt(q.value('ri'));
+						var elevation = parseFloat(q.value('re'));
+						var azimuth = parseFloat(q.value('rz'));
+						var solarelev = parseFloat(q.value('ro'));
+						
+						if (illumination == 0 && elevation > 0 && solarelev < -6) {
+							replyCaption += '<p>' + satelliteName + ' is <strong>potentially visible</strong> to ' + userName + ' at this point.</p>';
+						} else {
+							replyCaption += '<p>' + satelliteName + ' is probably <strong>not</strong> visible to ' + userName + ' at this point.</p>';
+						}
+						
+						replyCaption += '<ul>' +
+								'<li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
+								'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
+								'<li>Satellite illumination: ' + illumination + '</li>' +
+								'<li>Solar elevation: ' + solarelev + '</li>' +
+								'</ul>';			
+					}
+
 					
 					var replyInfoWindow = new google.maps.InfoWindow({
 							content: replyCaption
