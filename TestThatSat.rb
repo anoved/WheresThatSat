@@ -81,8 +81,21 @@ def TheresThatSat(satellite_name, mention_time, response_time, geo_given, geo_la
 		wts_url += format '&ri=%d&re=%f&rz=%f&ro=%f', r[6], r[7], r[8], r[9]
 	end
 		
-	puts wts_url
-		
+	#puts wts_url
+
+	# longest username (needed to address reply) is 15ish
+	# longest sat name currently is 28 (International Space Station)
+	# t.co link is ~20, let's say 21.
+	# so, we expend 15 + 28 + 21 = 64, say 65, characters.
+	# That leaves us 75 characters for reply text and data.
+
+	mention_lat = m[1].to_f
+	mention_lon = m[2].to_f
+	
+	reply_text = format "#USER# When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
+			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", wts_url
+	
+	puts reply_text
 end
 
 
