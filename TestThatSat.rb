@@ -33,7 +33,7 @@ def TheresThatSat(satellite_name, mention_time, response_time, geo_given, geo_la
 	# trace
 
 	wts_url += format '&t1=%d&t2=%d', mention_time, response_time
-	trace_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d-4m" --end "%d+4m" --interval 2m', tle_path, mention_time, response_time
+	trace_cmd = format './gtg --input "%s" --format csv --start "%d-4m" --end "%d+4m" --interval 2m', tle_path, mention_time, response_time
 	trace_data = GoGoGTG(trace_cmd)
 	trace_data.each {|line|
 		wts_url += format '&ll=%.4f,%.4f', line[1], line[2]
@@ -50,7 +50,7 @@ def TheresThatSat(satellite_name, mention_time, response_time, geo_given, geo_la
 	
 	# mention
 	
-	mention_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
+	mention_cmd = format './gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
 	
 	if (geo_given)
 		mention_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo_lat, geo_lon
@@ -67,7 +67,7 @@ def TheresThatSat(satellite_name, mention_time, response_time, geo_given, geo_la
 	# response
 	# mention and response code is essentially the same
 	
-	reply_cmd = format '/usr/local/bin/gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
+	reply_cmd = format './gtg --input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
 	
 	if (geo_given)
 		reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo_lat, geo_lon
