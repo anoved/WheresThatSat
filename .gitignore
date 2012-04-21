@@ -1,3 +1,6 @@
+# intervals.yml contains API call counts for tracking rate limiting
+/config/intervals.yml
+
 # Local copy of gtg
 /gtg
 

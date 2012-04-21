@@ -15,6 +15,8 @@ require 'chatterbot/dsl'
 # Ignore our own tweets to prevent a silly cycle of self-replies
 blacklist "wheresthatsat"
 
+require 'yaml'
+
 # for url encoding
 require 'cgi'
 
@@ -104,13 +106,31 @@ def ParseReplyTimestamp(created_at)
 	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0).to_i
 end
 
-def RespondToSearches()
+# parameter acc_available: number of API calls available
+# returns number of API calls consumed
+def RespondToSearches(acc_available)
 	# draft code stashed in notes
-	# we won't perform many searches anyway since it really pushes rate limit
+	return 0
 end
 
-def RespondToMentions()
+# parameter acc_available: number of API calls available
+# returns number of API calls consumed
+def RespondToMentions(acc_available)
+	
+	if (acc_available == 0)
+		puts "Cannot respond to replies: API limit exceeded"
+		return 0
+	end
+	# getting replies consumes one API call
+	acc = 1
+	
 	replies do |tweet|
+		
+		# prefer replies to sort by tweet time, so we can start with the oldest mention
+		# (this will also if we have to stop early due to api limits - if we save the
+		# time of the first skipped, we can resume in order there next time, as long
+		# as we're not totally buried)
+		
 		$catalog.keys.each do |satellite_name|
 			if tweet[:text].match(/\b#{satellite_name}\b/i)
 				
@@ -121,9 +141,9 @@ def RespondToMentions()
 				# Don't respond to this tweet if it's too old (overriding even
 				# our bot interval - we don't want to render any huge ranges
 				# on the map, or try passing them through the URL parameters)
-				if (output_timestamp - input_timestamp > (15 * 60))
-					next
-				end
+				#if (output_timestamp - input_timestamp > (15 * 60))
+				#	next
+				#end
 				
 				if (tweet[:text].match(/\#time(\d+)/i))
 					# If the user specifies a specific time (which may be long past,
@@ -181,13 +201,65 @@ def RespondToMentions()
 					puts response
 				else
 					# Otherwise, post the response in reply to the input Tweet.
+			
+					# (consider caching the time of the first one we have to skip
+					# as the since ID, so we can start with it next time.
+					# this is fine for catching up with occasional bursts,
+					# but if traffic is consistently high that would result
+					# in getting further and further behind.)
+					
+					if (acc + 1 >= acc_available)
+						puts "Stopping early: expended API calls"
+						return acc
+					end
+					
+					acc += 1
 					reply response, tweet
 				end
 			end
 		end
 	end
+	
+	return acc
 end
 
+# returns current API call count (cumulative for the past hour, or whatever
+# period is represented by the set of per-interval call counts in :intervals)
+def ReadAPICallCount()
+	acc_intervals = YAML.load_file("config/intervals.yml")[:intervals]
+	return acc_intervals.inject(0) {|sum, value| sum + value}
+end
+
+# writes current API call count; updates :intervals with current interval's acc
+# and drops any old interval counts. returns final call count.
+def WriteAPICallCount(acc)
+	
+	intervals = YAML.load_file("config/intervals.yml")[:intervals]
+	
+	# drop all but the most recent five intervals from the list of intervals
+	# (assuming a tracking period of six intervals - 6 x 10 minutes = 1 hour)
+	while intervals.length > 5 do intervals.shift end
+	
+	# add the most recent count to the interval list
+	intervals.push acc
+	
+	File.open("config/intervals.yml", "w") {|file| YAML.dump({:intervals => intervals}, file)}
+	
+	return intervals.inject(0) {|sum, value| sum + value}
+end
+
+
 LoadSatelliteCatalog()
-RespondToSearches()
-RespondToMentions()
+
+acc_available = 150 - ReadAPICallCount()
+acc_consumed = 0
+
+acc = RespondToMentions(acc_available)
+acc_consumed += acc
+acc_available -= acc
+
+acc = RespondToSearches(acc_available)
+acc_consumed += acc
+acc_available -= acc
+
+WriteAPICallCount(acc_consumed)
