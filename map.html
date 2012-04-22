@@ -85,9 +85,10 @@
 				
 			}
 			
-			div.satmarker {
+			div.satmarker, #observer-marker {
 				border: 2px solid transparent;
 			}
+			
 			#header {
 				background-color: #AAAADD;
 			}
@@ -95,6 +96,7 @@
 				background-color: #AAAADD;
 			}
 			.locinfo {
+				clear: both;
 				margin: 3px;
 				padding: 6px;
 				border: solid 2px gray;
@@ -253,7 +255,7 @@
 						map: map,
 						content: iconHTML
 				});
-				var caption = '<p><img src="' + icon_path + '"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
+				var caption = '<p><img src="' + icon_path + '" style="float:left;"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
 						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
@@ -401,11 +403,31 @@
 								position: point,
 								animation: google.maps.Animation.DROP,
 								title: userName,
-								content: '<div><img src="images/user-location.png"></div>',
+								content: '<div id="observer-marker"><img src="images/user-location.png"></div>',
 								anchor: RichMarkerPosition.BOTTOM,
 								draggable: false,
 								flat: true,
 								map: map
+						});
+						
+						var obscaption = '<p><img src="images/user-location.png" /></p><p>Your location is ' + FormatLatLon(ll) + '.</p>';
+						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
+						
+						
+						google.maps.event.addListener(observerMarker, 'mouseover', function() {
+							obsinfo.style.borderColor = "blue";
+						});
+						google.maps.event.addListener(observerMarker, 'mouseout', function() {
+							obsinfo.style.borderColor = "gray";
+						});
+						
+						obsinfo.addEventListener('mouseover', function() {
+							var md = document.getElementById('observer-marker');
+							md.style.borderColor = "blue";
+						});
+						obsinfo.addEventListener('mouseout', function() {
+							var md = document.getElementById('observer-marker');
+							md.style.borderColor = "transparent";
 						});
 					}
 
