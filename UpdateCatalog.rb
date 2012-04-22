@@ -4,15 +4,13 @@
 # defined in our catalog, satellites.txt, which is a list of satellite names
 # exactly as they appear in the Celestrak files
 
+require 'yaml'
 require 'open-uri'
 
 # load the list of TLE lists to load
-fsources = open "config/tle_sources.txt"
-tle_urls = fsources.read.split("\n")
-fsources.close
+tle_urls = YAML.load_file('config/tle_sources.yml')
 
 catalog = {}
-
 tle_urls.each do |tle_url|
 	
 	puts "Updating index: #{tle_url}"
@@ -33,7 +31,6 @@ tle_urls.each do |tle_url|
 		tle_name.gsub!(/\(.+?\)/, "")
 		tle_name.gsub!(/\[.+?\]/, "")
 		tle_name.rstrip!
-		
 		
 		# replace any non-alphanumeric characters in the name with underscores
 		tle_filename = "tle/" + tle_name.gsub(/[^A-Za-z0-9]+/, "_") + ".tle"
@@ -58,8 +55,4 @@ end
 catalog["International Space Station"] = "tle/ISS.tle"
 
 # write the catalog to file
-catalog_file = open "config/catalog.txt", "w"
-catalog.keys.sort.each do |key|
-	catalog_file.write(format "%s\t%s\n", key, catalog[key])
-end
-catalog_file.close
+File.open('config/catalog.yml', 'w') {|file| YAML.dump(catalog, file)}

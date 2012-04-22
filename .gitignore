@@ -5,7 +5,7 @@
 /gtg
 
 # TLE catalog is automatically generated and may change frequently.
-/config/catalog.txt
+/config/catalog.yml
 /tle
 
 # Bot configuration file contains API keys

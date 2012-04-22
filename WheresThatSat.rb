@@ -79,15 +79,8 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 end
 
 # sets $catalog global variable to hash of satellite names -> TLE file paths
-def LoadSatelliteCatalog(catalog_path='config/catalog.txt')
-	catalog_file = open catalog_path
-	catalog_lines = catalog_file.read.split("\n")
-	catalog_file.close
-	$catalog = {}
-	catalog_lines.each do |catalog_line|
-		name, path = catalog_line.split("\t")
-		$catalog[name] = path
-	end
+def LoadSatelliteCatalog(catalog_path='config/catalog.yml')
+	$catalog = YAML.load_file(catalog_path)
 end
 
 # returns integer number of seconds since UNIX epoch
