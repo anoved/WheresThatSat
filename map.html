@@ -289,6 +289,7 @@
 				// highlight info panels when pointing at markers
 				google.maps.event.addListener(marker, 'mouseover', function() {
 					infopanel.style.borderColor = "blue";
+					
 				});
 				google.maps.event.addListener(marker, 'mouseout', function() {
 					infopanel.style.borderColor = "gray";
@@ -298,11 +299,13 @@
 				infopanel.addEventListener('mouseover', function() {
 					var markerdiv = document.getElementById(id + '-marker');
 					markerdiv.style.borderColor = "blue";
+					infopanel.style.borderColor = "blue";
 				});
 				
 				infopanel.addEventListener('mouseout', function() {
 					var markerdiv = document.getElementById(id + '-marker');
 					markerdiv.style.borderColor = "transparent";
+					infopanel.style.borderColor = "gray";
 				});
 			}
 						
@@ -424,10 +427,12 @@
 						obsinfo.addEventListener('mouseover', function() {
 							var md = document.getElementById('observer-marker');
 							md.style.borderColor = "blue";
+							obsinfo.style.borderColor = "blue";
 						});
 						obsinfo.addEventListener('mouseout', function() {
 							var md = document.getElementById('observer-marker');
 							md.style.borderColor = "transparent";
+							obsinfo.style.borderColor = "gray";
 						});
 					}
 
@@ -452,7 +457,7 @@
 					
 					// Prompt user to ask about this satellite again
 					{
-						var askcaption = '<p><img src="images/tweet-reply.png" /> <a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s that sat now?</a></p>';
+						var askcaption = '<p><img src="images/tweet-reply.png" /> <a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a></p>';
 						AddInfoToPanel(rightpanel, askcaption, 'ask');
 					}
 					
