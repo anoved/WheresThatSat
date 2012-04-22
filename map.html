@@ -97,10 +97,15 @@
 			.locinfo {
 				margin: 3px;
 				padding: 6px;
-				border: solid 1px gray;
+				border: solid 2px gray;
 				background-color: white;
 				font-family: Verdana, sans-serif;
 				font-size: small;
+			}
+			
+			.locinfo p {
+				margin-top: 0;
+				margin-bottom: 0;
 			}
 			
 		</style>
@@ -252,21 +257,21 @@
 				
 				// highlight info panels when pointing at markers
 				google.maps.event.addListener(marker, 'mouseover', function() {
-					infopanel.style.backgroundColor = "#BFCCDC";
+					infopanel.style.borderColor = "blue";
 				});
 				google.maps.event.addListener(marker, 'mouseout', function() {
-					infopanel.style.backgroundColor = "white";
+					infopanel.style.borderColor = "gray";
 				});
 				
 				// highlight markers when pointing at info panels
 				infopanel.addEventListener('mouseover', function() {
 					var markerdiv = document.getElementById(id + '-marker');
-					markerdiv.style.border = "2px solid blue";
+					markerdiv.style.borderColor = "blue";
 				});
 				
 				infopanel.addEventListener('mouseout', function() {
 					var markerdiv = document.getElementById(id + '-marker');
-					markerdiv.style.border = "2px solid transparent";
+					markerdiv.style.borderColor = "transparent";
 				});
 			}
 						
@@ -354,9 +359,6 @@
 					map.fitBounds(traceExtent);
 					
 					var caption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
-					if (document.referrer != '') {
-						caption += '<p>Referrer: ' + document.referrer + '</p>';
-					}
 					
 					AddInfoToPanel(rightpanel, caption, 'trace');
 				
@@ -389,6 +391,13 @@
 						}
 					
 					}
+					
+					// Display referrer link iff it's a t.co shortlink
+					var f = 'http://t.co/eHwqBa5W'
+					if ((f != '') && (f.split('/')[2] == 't.co')) {
+						var refcaption = '<p>Link to this map page: <a href="' + f + '">' + f + '</a></p>';
+						AddInfoToPanel(rightpanel, refcaption, 'referrer');
+					}
 				
 				}
 			}
@@ -402,20 +411,17 @@
 		</div>
 		
 		<div id="content" class="row">
-		
-			<div id="leftpanel" class="col scrolly">
-			left
-			</div>
+			
+			<!-- unused -->
+			<div id="leftpanel" class="col scrolly"></div>
 			
 			<div id="map_canvas" class="col"></div>
 						
-			<div id="rightpanel" class="col scrolly">
-			</div>
+			<div id="rightpanel" class="col scrolly"></div>
 		
 		</div>
 		
-		<div id="footer" class="row">
-		footer
-		</div>
+		<div id="footer" class="row"> </div>
+		
 	</body>
 </html>
