@@ -358,7 +358,7 @@
 					// Adjust map extent to focus on ground track.
 					map.fitBounds(traceExtent);
 					
-					var caption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
+					var caption = '<p>The green line depicts the ground track of <a href="http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName) + '">' + satelliteName + "</a> from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
 					
 					AddInfoToPanel(rightpanel, caption, 'trace');
 				
@@ -393,9 +393,8 @@
 					}
 					
 					// Display referrer link iff it's a t.co shortlink
-					var f = 'http://t.co/eHwqBa5W'
-					if ((f != '') && (f.split('/')[2] == 't.co')) {
-						var refcaption = '<p>Link to this map page: <a href="' + f + '">' + f + '</a></p>';
+					if ((document.referrer != '') && (document.referrer.split('/')[2] == 't.co')) {
+						var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
 						AddInfoToPanel(rightpanel, refcaption, 'referrer');
 					}
 				
