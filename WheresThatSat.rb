@@ -160,17 +160,9 @@ def RespondToMentions(acc_available)
 					# A place location is given
 					input_geo = true
 					bbox = tweet[:place][:bounding_box][:coordinates][0]
-					#bbox[0] # southlat, westlon
-					#bbox[1] # southlat, eastlon
-					#bbox[2] # northlat, eastlon
-					#bbox[3] # northlat, westlon
-					southlat = bbox[0][1]
-					northlat = bbox[2][1]
-					westlon = bbox[0][0]
-					eastlon = bbox[2][0]
 					# bit naive here -- untested on dateline, etc.
-					input_lat = (southlat + northlat) / 2.0
-					input_lon = (westlon + eastlon) / 2.0
+					input_lat = (bbox[0][1] + bbox[2][1]) / 2.0
+					input_lon = (bbox[0][0] + bbox[2][0]) / 2.0
 					if $testmode then puts format "Implicit place geo: %f, %f", input_lat, input_lon end
 				end
 	
