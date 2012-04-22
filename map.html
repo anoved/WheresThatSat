@@ -111,6 +111,11 @@
 		
 		<script type="text/javascript">
 			
+			function CoordinateParameterToLatLon(coordinates) {
+				var latlon_strings = coordinates.split(',');
+				return latlon_strings.map(function(x) {return parseFloat(x);});
+			}
+			
 			// heading must be in range [0-360]
 			function HeadingToCompassDirection(heading) {
 				// per https://en.wikipedia.org/wiki/Boxing_the_compass
@@ -210,21 +215,8 @@
 				// Cloud layer (requires &libraries=weather in script request)
 				//var cloudLayer = new google.maps.weather.CloudLayer();
 				//cloudLayer.setMap(map);
-				
-				// Add the @WheresThatSat link logo as a control.
-				// -- Assemble this div dynamically, to avoid appearance of
-				//    it jumping around if it takes a second to lay out.
-				//    (Actually, with header/sidebar, no real need to overlay.)
-				//var wtsLogoControl = document.getElementById("wts_logo");
-				//map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsLogoControl);
-
-				//var wtsTwitterControl = document.getElementById("wts_twitter");
-				//map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(wtsTwitterControl);
-
-
 				q = new QueryString();
 				
-				// 
 				var satelliteName;
 				if (q.exists('sn')) {
 					satelliteName = q.value('sn');
@@ -260,8 +252,8 @@
 					var traceCoordinates = [];
 					var traceExtent = new google.maps.LatLngBounds();
 					for (var i = 0; i < traceParameters.length; i++) {
-						var latlon = traceParameters[i].split(',');
-						var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+						var ll = CoordinateParameterToLatLon(traceParameters[i]);
+						var point = new google.maps.LatLng(ll[0], ll[1]);
 						traceExtent.extend(point);
 						traceCoordinates.push(point);
 					}
@@ -272,7 +264,7 @@
 							strokeOpacity: 1.0,
 							strokeColor: "#008800",
 							strokeWeight: 8,
-							geodesic: true,
+							geodesic: false,
 							clickable: false,
 							map: map
 					});
@@ -289,9 +281,9 @@
 				}
 				
 				// Create marker to represent Observer position.
-				if (q.exists('ol')) {	
-					var latlon = q.value('ol').split(',');
-					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+				if (q.exists('ol')) {
+					var ll = CoordinateParameterToLatLon(q.value('ol'));
+					var point = new google.maps.LatLng(ll[0], ll[1]);
 					var observerMarker = new RichMarker({
 							position: point,
 							animation: google.maps.Animation.DROP,
@@ -302,7 +294,6 @@
 							flat: true,
 							map: map
 					});
-					// icon: 'https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini',
 				}
 				
 				// Create marker to represent Mention position.
@@ -317,8 +308,8 @@
 					var mentionTime = new Date(parseInt(q.value('mt')) * 1000);
 					
 					// select a custom icon or apply rotation to indicate heading
-					var latlon = q.value('ml').split(',');
-					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
+					var ll = CoordinateParameterToLatLon(q.value('ml'));
+					var point = new google.maps.LatLng(ll[0], ll[1]);
 					var mentionMarker = new RichMarker({
 							position: point,
 							clickable: false,
@@ -333,7 +324,7 @@
 					//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 					
 					var headingDirection = HeadingToCompassDirection(mentionHeading);
-					var mentionCaption = '<p><img src="images/green-droplet.png" style="float:left;">At ' + mentionTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + mentionAltitude + ' km moving ' + headingDirection + ' (' + mentionHeading + ' degrees) at ' + mentionSpeed + ' km/s.</p>';					
+					var mentionCaption = '<p><img src="images/green-droplet.png" style="float:left;">At ' + mentionTime.toUTCString() + ', ' + satelliteName + ' was above ' + ll[0] + ' ' + ll[1] + ' at an altitude of ' + mentionAltitude + ' km moving ' + headingDirection + ' (' + mentionHeading + ' degrees) at ' + mentionSpeed + ' km/s.</p>';					
 										
 					if (q.exists('mi') && q.exists('me') && q.exists('mz') && q.exists('mo')) {
 						
@@ -360,68 +351,60 @@
 					mentionDiv.className = "locinfo";
 					mentionDiv.innerHTML = mentionCaption;
 					rightpanel.appendChild(mentionDiv);
-					
-				}
 				
-				// Create marker to represent Reply position.
-				if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
-					
-					// probably redundant - already open from mention
-					// really, we'll never encounter a response without a mention (only vice versa),
-					// so this could be a sub-condition of the mention conditional
-					rightpanel.style.width = "250px";
-					map_canvas.style.right = "250px";
-					
-
-					var replyAltitude = parseFloat(q.value('ra'));
-					var replyHeading = parseFloat(q.value('rh'));
-					var replySpeed = parseFloat(q.value('rs'));
-					var replyTime = new Date(parseInt(q.value('rt')) * 1000);
-					
-					// select a custom icon or apply rotation to indicate heading
-					var latlon = q.value('rl').split(',');
-					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
-					var replyMarker = new RichMarker({
-							position: point,
-							draggable: false,
-							title: replyTime.toTimeString(),
-							content: '<div style="-webkit-transform: rotate(' + replyHeading + 'deg);-webkit-transform-origin:50% 0%;"><img src="images/orange-droplet.png"></div>',
-							anchor: RichMarkerPosition.TOP,
-							flat: true,
-							map: map
-					});
-			
-					var headingDirection = HeadingToCompassDirection(replyHeading);
-					var replyCaption = '<p><img src="images/orange-droplet.png" style="float:left;">At ' + replyTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + replyAltitude + ' km moving ' + headingDirection + ' (' + replyHeading + ' degrees) at ' + replySpeed + ' km/s.</p>';
-
-					if (q.exists('ri') && q.exists('re') && q.exists('rz') && q.exists('ro')) {
+				}				
+					// Create marker to represent Reply position. Presence is only meaningful if mention position exists.
+					if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
+							
+						var replyAltitude = parseFloat(q.value('ra'));
+						var replyHeading = parseFloat(q.value('rh'));
+						var replySpeed = parseFloat(q.value('rs'));
+						var replyTime = new Date(parseInt(q.value('rt')) * 1000);
 						
-						var illumination = parseInt(q.value('ri'));
-						var elevation = parseFloat(q.value('re'));
-						var azimuth = parseFloat(q.value('rz'));
-						var solarelev = parseFloat(q.value('ro'));
-						
-						if (illumination == 0 && elevation > 0 && solarelev < -6) {
-							replyCaption += '<p>' + satelliteName + ' is <strong>potentially visible</strong> to ' + userName + ' at this point.</p>';
-						} else {
-							replyCaption += '<p>' + satelliteName + ' is probably <strong>not</strong> visible to ' + userName + ' at this point.</p>';
+						// select a custom icon or apply rotation to indicate heading
+						var ll = CoordinateParameterToLatLon(q.value('rl'));
+						var point = new google.maps.LatLng(ll[0], ll[1]);
+						var replyMarker = new RichMarker({
+								position: point,
+								draggable: false,
+								title: replyTime.toTimeString(),
+								content: '<div style="-webkit-transform: rotate(' + replyHeading + 'deg);-webkit-transform-origin:50% 0%;"><img src="images/orange-droplet.png"></div>',
+								anchor: RichMarkerPosition.TOP,
+								flat: true,
+								map: map
+						});
+				
+						var headingDirection = HeadingToCompassDirection(replyHeading);
+						var replyCaption = '<p><img src="images/orange-droplet.png" style="float:left;">At ' + replyTime.toUTCString() + ', ' + satelliteName + ' was above ' + ll[0] + ' ' + ll[1] + ' at an altitude of ' + replyAltitude + ' km moving ' + headingDirection + ' (' + replyHeading + ' degrees) at ' + replySpeed + ' km/s.</p>';
+	
+						if (q.exists('ri') && q.exists('re') && q.exists('rz') && q.exists('ro')) {
+							
+							var illumination = parseInt(q.value('ri'));
+							var elevation = parseFloat(q.value('re'));
+							var azimuth = parseFloat(q.value('rz'));
+							var solarelev = parseFloat(q.value('ro'));
+							
+							if (illumination == 0 && elevation > 0 && solarelev < -6) {
+								replyCaption += '<p>' + satelliteName + ' is <strong>potentially visible</strong> to ' + userName + ' at this point.</p>';
+							} else {
+								replyCaption += '<p>' + satelliteName + ' is probably <strong>not</strong> visible to ' + userName + ' at this point.</p>';
+							}
+							
+							replyCaption += '<ul>' +
+									'<li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
+									'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
+									'<li>Satellite illumination: ' + illumination + '</li>' +
+									'<li>Solar elevation: ' + solarelev + '</li>' +
+									'</ul>';			
 						}
-						
-						replyCaption += '<ul>' +
-								'<li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
-								'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
-								'<li>Satellite illumination: ' + illumination + '</li>' +
-								'<li>Solar elevation: ' + solarelev + '</li>' +
-								'</ul>';			
-					}
-
-					var replyDiv = document.createElement('div');
-					replyDiv.className = "locinfo";
-					replyDiv.innerHTML = replyCaption;
-					rightpanel.appendChild(replyDiv);
-				}
+	
+						var replyDiv = document.createElement('div');
+						replyDiv.className = "locinfo";
+						replyDiv.innerHTML = replyCaption;
+						rightpanel.appendChild(replyDiv);
+					} // end reply
 				
-				
+				// end mention
 			}
 		</script>
 		
