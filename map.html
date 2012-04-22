@@ -102,6 +102,10 @@
 		
 		<script type="text/javascript" src="QueryString.js">
 		</script>
+
+		<script type="text/javascript" src="richmarker.js">
+		</script>
+
 		
 		<script type="text/javascript">
 						
@@ -226,12 +230,15 @@
 					// select a custom icon or apply rotation to indicate heading
 					var latlon = q.value('ml').split(',');
 					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
-					var mentionMarker = new google.maps.Marker({
+					var mentionMarker = new RichMarker({
 							position: point,
-							title: mentionTime.toTimeString(),
+							draggable: false,
+							content: '<div style="-webkit-transform: rotate(' +mentionHeading + 'deg);"><img src="icon.png"></div>',
 							flat: true,
 							map: map
 					});
+					
+					//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 					
 					var mentionCaption = "<ul>" +
 						'<li>Time: ' + mentionTime.toTimeString() + '</li>' +
