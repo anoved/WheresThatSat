@@ -200,6 +200,11 @@
 					return "north";
 			}
 			
+			function FormatTimestamp(timestamp) {
+				return timestamp.toDateString() + ' at ' + timestamp.toTimeString();
+				//return timestamp.toUTCString();
+			}
+			
 			function AddInfoToPanel(panel, caption, id) {
 				var infodiv = document.createElement('div');
 				infodiv.className = 'locinfo';
@@ -230,9 +235,9 @@
 						map: map,
 						content: iconHTML
 				});
-				var caption = '<p><img src="' + icon_path + '" style="float:left;">At ' + timestamp.toUTCString() +
-						', ' + satellite_name + ' was above ' + ll[0] + ' ' + ll[1] + ' at an altitude of ' +
-						altitude + ' km moving ' + direction + ' (' + heading + ' degrees) at ' + speed + ' km/s.</p>';
+				var caption = '<p><img src="' + icon_path + '"></p><p>On ' + FormatTimestamp(timestamp) +
+						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + ll[0] + ' ' + ll[1] +
+						' moving ' + direction + ' (' + heading + ' degrees) at ' + speed + ' km/s.</p>';
 				
 				if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
 					var illumination = parseInt(q.value(illumination_arg));
@@ -357,7 +362,7 @@
 					});
 					
 					
-					var caption = '<p>The green line depicts the ground track of <a href="http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName) + '">' + satelliteName + "</a> from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
+					var caption = '<p>The green line depicts the ground track of <a href="http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName) + '">' + satelliteName + "</a> from " + FormatTimestamp(traceStartTime) + " to " + FormatTimestamp(traceEndTime) + ".</p>";
 					
 					AddInfoToPanel(rightpanel, caption, 'trace');
 				
