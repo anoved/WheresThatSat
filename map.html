@@ -85,10 +85,10 @@
 				
 			}
 			
-			
-			#wts_logo {
+			/*#wts_logo {
 				padding: 2px;
-			}
+			}*/
+			
 			/*#wts_twitter {
 				padding: 10px;
 			}*/
@@ -97,8 +97,8 @@
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
 		</script>
 				
-		<!-- <script src="http://platform.twitter.com/widgets.js" charset="utf-8">
-		</script> -->
+		<script src="http://platform.twitter.com/widgets.js" charset="utf-8">
+		</script>
 		
 		<script type="text/javascript" src="QueryString.js">
 		</script>
@@ -128,8 +128,11 @@
 				//cloudLayer.setMap(map);
 				
 				// Add the @WheresThatSat link logo as a control.
-				var wtsLogoControl = document.getElementById("wts_logo");
-				map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsLogoControl);
+				// -- Assemble this div dynamically, to avoid appearance of
+				//    it jumping around if it takes a second to lay out.
+				//    (Actually, with header/sidebar, no real need to overlay.)
+				//var wtsLogoControl = document.getElementById("wts_logo");
+				//map.controls[google.maps.ControlPosition.RIGHT_TOP].push(wtsLogoControl);
 
 				//var wtsTwitterControl = document.getElementById("wts_twitter");
 				//map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(wtsTwitterControl);
@@ -337,7 +340,7 @@
 	<body onload="initialize()">
 		
 		<div id="header" class="row">
-		header
+		Where's That Sat? <a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
 		</div>
 		
 		<div id="content" class="row">
@@ -347,13 +350,10 @@
 			</div>
 			
 			<div id="map_canvas" class="col"></div>
-			<div id="wts_logo">
+			<!-- <div id="wts_logo">
 				<img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" />
-			</div>
-			<!-- <div id="wts_twitter">
-				<a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
 			</div> -->
-			
+						
 			<div id="rightpanel" class="col scrolly">
 			right
 			</div>
