@@ -53,6 +53,7 @@ end
 
 # special cases - extra/popular names
 catalog["International Space Station"] = "tle/ISS.tle"
+catalog["Hubble Space Telescope"] = "tle/HST.tle"
 
 # write the catalog to file
 File.open('config/catalog.yml', 'w') {|file| YAML.dump(catalog, file)}
