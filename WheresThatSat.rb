@@ -114,23 +114,14 @@ def RespondToSearches(acc_available)
 end
 
 # parameter acc_available: number of API calls available
-# returns number of API calls consumed
+# returns number of API calls consumed (acc)
 def RespondToMentions(acc_available)
-	
 	if (acc_available == 0)
-		puts "Cannot respond to replies: API limit exceeded"
+		puts STDERR, "Not responding to mentions: rate limit"
 		return 0
 	end
-	# getting replies consumes one API call
-	acc = 1
-	
-	replies do |tweet|
-		
-		# prefer replies to sort by tweet time, so we can start with the oldest mention
-		# (this will also if we have to stop early due to api limits - if we save the
-		# time of the first skipped, we can resume in order there next time, as long
-		# as we're not totally buried)
-		
+	acc = 1	
+	replies do |tweet|		
 		$catalog.keys.each do |satellite_name|
 			if tweet[:text].match(/\b#{satellite_name}\b/i)
 				
@@ -193,7 +184,7 @@ def RespondToMentions(acc_available)
 				tle_path = $catalog[satellite_name]
 				input_username = from_user(tweet)
 				input_tweetid = tweet[:id]
-								
+											
 				response = TheresThatSat satellite_name, tle_path, input_username, input_tweetid,
 						input_timestamp, output_timestamp, input_geo, input_lat, input_lon
 				if ($testmode)
@@ -201,18 +192,10 @@ def RespondToMentions(acc_available)
 					puts response
 				else
 					# Otherwise, post the response in reply to the input Tweet.
-			
-					# (consider caching the time of the first one we have to skip
-					# as the since ID, so we can start with it next time.
-					# this is fine for catching up with occasional bursts,
-					# but if traffic is consistently high that would result
-					# in getting further and further behind.)
-					
 					if (acc + 1 >= acc_available)
-						puts "Stopping early: expended API calls"
+						puts STDERR, format("Not responding to mention %s or earlier: rate limit.", input_tweetid.to_s)
 						return acc
 					end
-					
 					acc += 1
 					reply response, tweet
 				end
@@ -251,15 +234,16 @@ end
 
 LoadSatelliteCatalog()
 
-acc_available = 150 - ReadAPICallCount()
-acc_consumed = 0
+ac_initial = ReadAPICallCount()
+ac_available = 150 - ac_initial
+ac_consumed = 0
 
-acc = RespondToMentions(acc_available)
-acc_consumed += acc
-acc_available -= acc
+acc = RespondToMentions(ac_available)
+ac_consumed += acc
+ac_available -= acc
 
-acc = RespondToSearches(acc_available)
-acc_consumed += acc
-acc_available -= acc
+acc = RespondToSearches(ac_available)
+ac_consumed += acc
+ac_available -= acc
 
-WriteAPICallCount(acc_consumed)
+WriteAPICallCount(ac_consumed)
