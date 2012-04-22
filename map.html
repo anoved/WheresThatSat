@@ -242,7 +242,9 @@
 					var mentionMarker = new RichMarker({
 							position: point,
 							draggable: false,
-							content: '<div style="-webkit-transform: rotate(' +mentionHeading + 'deg);"><img src="icon.png"></div>',
+							title: mentionTime.toTimeString(),
+							content: '<div style="-webkit-transform: rotate(' + mentionHeading + 'deg);-webkit-transform-origin:50% 0%;"><img src="images/green-droplet.png"></div>',
+							anchor: RichMarkerPosition.TOP,
 							flat: true,
 							map: map
 					});
@@ -300,9 +302,12 @@
 					// select a custom icon or apply rotation to indicate heading
 					var latlon = q.value('rl').split(',');
 					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
-					var replyMarker = new google.maps.Marker({
+					var replyMarker = new RichMarker({
 							position: point,
+							draggable: false,
 							title: replyTime.toTimeString(),
+							content: '<div style="-webkit-transform: rotate(' + replyHeading + 'deg);-webkit-transform-origin:50% 0%;"><img src="images/orange-droplet.png"></div>',
+							anchor: RichMarkerPosition.TOP,
 							flat: true,
 							map: map
 					});
@@ -356,7 +361,7 @@
 	<body onload="initialize()">
 		
 		<div id="header" class="row">
-		Where's That Sat? <!-- <a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>-->
+		Where's That Sat?
 		</div>
 		
 		<div id="content" class="row">
