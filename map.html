@@ -209,10 +209,13 @@
 				if (q.exists('ol')) {	
 					var latlon = q.value('ol').split(',');
 					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
-					var observerMarker = new google.maps.Marker({
+					var observerMarker = new RichMarker({
 							position: point,
 							animation: google.maps.Animation.DROP,
 							title: userName,
+							content: '<div><img src="images/user-location.png"></div>',
+							anchor: RichMarkerPosition.BOTTOM,
+							draggable: false,
 							flat: true,
 							map: map
 					});
