@@ -85,6 +85,15 @@
 				
 			}
 			
+			
+			.locinfo {
+				margin: 2px;
+				padding: 2px;
+				border: solid 1px gray;
+				font-family: Verdana, sans-serif;
+				font-size: small;
+			}
+			
 		</style>
 		
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
@@ -228,8 +237,8 @@
 				// Create marker to represent Mention position.
 				if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 					
-					leftpanel.style.width = "200px";
-					map_canvas.style.right = "200px";
+					rightpanel.style.width = "250px";
+					map_canvas.style.right = "250px";
 					
 					var mentionAltitude = parseFloat(q.value('ma'));
 					var mentionHeading = parseFloat(q.value('mh'));
@@ -241,6 +250,7 @@
 					var point = new google.maps.LatLng(parseFloat(latlon[0]), parseFloat(latlon[1]));
 					var mentionMarker = new RichMarker({
 							position: point,
+							clickable: false,
 							draggable: false,
 							title: mentionTime.toTimeString(),
 							content: '<div style="-webkit-transform: rotate(' + mentionHeading + 'deg);-webkit-transform-origin:50% 0%;"><img src="images/green-droplet.png"></div>',
@@ -251,7 +261,9 @@
 					
 					//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 					
-					var mentionCaption = "<ul>" +
+					var mentionCaption =
+						'<p><img src="images/green-droplet.png">When you mentioned the satellite, it was here:</p>' +
+						'<ul>' +
 						'<li>Time: ' + mentionTime.toTimeString() + '</li>' +
 						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
 						'<li>Altitude: ' + mentionAltitude + ' km</li>' +
@@ -281,19 +293,23 @@
 								'</ul>';			
 					}
 					
-					var mentionInfoWindow = new google.maps.InfoWindow({
-							content: mentionCaption
-					});
-					google.maps.event.addListener(mentionMarker, 'click', function() {
-							mentionInfoWindow.open(map, mentionMarker);
-					});
-
+					var mentionDiv = document.createElement('div');
+					mentionDiv.className = "locinfo";
+					mentionDiv.innerHTML = mentionCaption;
+					rightpanel.appendChild(mentionDiv);
 					
 				}
 				
 				// Create marker to represent Reply position.
 				if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
 					
+					// probably redundant - already open from mention
+					// really, we'll never encounter a response without a mention (only vice versa),
+					// so this could be a sub-condition of the mention conditional
+					rightpanel.style.width = "250px";
+					map_canvas.style.right = "250px";
+					
+
 					var replyAltitude = parseFloat(q.value('ra'));
 					var replyHeading = parseFloat(q.value('rh'));
 					var replySpeed = parseFloat(q.value('rs'));
@@ -313,7 +329,9 @@
 					});
 			
 			
-					var replyCaption = "<ul>" +
+					var replyCaption = 
+						'<p><img src="images/orange-droplet.png"> When WheresThatSat replied, it was here:</p>' +
+						'<ul>' +
 						'<li>Time: ' + replyTime.toTimeString() + '</li>' +
 						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
 						'<li>Altitude: ' + replyAltitude + ' km</li>' +
@@ -343,14 +361,10 @@
 								'</ul>';			
 					}
 
-					
-					var replyInfoWindow = new google.maps.InfoWindow({
-							content: replyCaption
-					});
-					google.maps.event.addListener(replyMarker, 'click', function() {
-							replyInfoWindow.open(map, replyMarker);
-					});
-			
+					var replyDiv = document.createElement('div');
+					replyDiv.className = "locinfo";
+					replyDiv.innerHTML = replyCaption;
+					rightpanel.appendChild(replyDiv);
 				}
 				
 				
@@ -373,7 +387,6 @@
 			<div id="map_canvas" class="col"></div>
 						
 			<div id="rightpanel" class="col scrolly">
-			right
 			</div>
 		
 		</div>
