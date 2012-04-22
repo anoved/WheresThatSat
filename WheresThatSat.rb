@@ -100,10 +100,72 @@ def ParseReplyTimestamp(created_at)
 end
 
 # parameter acc_available: number of API calls available
-# returns number of API calls consumed
-def RespondToSearches(acc_available)
-	# draft code stashed in notes
-	return 0
+# search_quota is a cutoff for how many search-related api calls to perform,
+#  regardless of how many calls are available. will not perform more than min
+#  of search_quota and acc_available.
+# returns number of API calls consumed (acc)
+def RespondToSearches(acc_available, search_quota=20)
+
+	if (acc_available < search_quota) then search_quota = acc_available end
+	
+	acc = 0
+	
+	# load the list of satellite names to search for
+	satellite_queries = YAML.load_file('config/sat_searches.yml')
+	
+	satellite_queries.each do |satellite_name|
+		
+		if (acc + 1 >= search_quota)
+			puts STDERR, format("Stopping search at %s: rate limit/quota", satellite_name)
+			return acc
+		end
+		acc += 1
+		
+		search(format('"%s"', satellite_name)) do |tweet|
+			
+			# skip any results that refer to us: they're handled as Mentions
+			if tweet[:text].match(/@WheresThatSat/i) then next end
+			
+			# time
+			input_timestamp = ParseSearchTimestamp(tweet[:created_at])
+			output_timestamp = Time.now.utc.to_i
+			
+			# location
+			input_geo = false
+			input_lat = 0
+			input_lon = 0
+			if (tweet[:geo] != nil)
+				input_geo = true
+				input_lat = tweet[:geo][:coordinates][0]
+				input_lon = tweet[:geo][:coordinates][1]
+			elsif (tweet[:place] != nil)
+				input_geo = true
+				bbox = tweet[:place][:bounding_box][:coordinates][0]
+				input_lat = (bbox[0][1] + bbox[2][1]) / 2.0
+				input_lon = (bbox[0][0] + bbox[2][0]) / 2.0
+			end
+			
+			# (No explicit time/location tags expected in non-mention search results)
+						
+			response = TheresThatSat satellite_name, $catalog[satellite_name],
+					from_user(tweet), tweet[:id], input_timestamp, output_timestamp,
+					input_geo, input_lat, input_lon
+			
+			if $testmode
+				puts response
+			else
+				if (acc + 1 >= search_quota)
+					puts STDERR, format("Not responding to search %s: rate limit/quota.", tweet[:id].to_s)
+					return acc
+				end
+				acc += 1
+				reply response tweet
+			end
+			
+		end
+	end
+	
+	return acc
 end
 
 # parameter acc_available: number of API calls available
@@ -166,19 +228,17 @@ def RespondToMentions(acc_available)
 					if $testmode then puts format "Implicit place geo: %f, %f", input_lat, input_lon end
 				end
 	
-				tle_path = $catalog[satellite_name]
-				input_username = from_user(tweet)
-				input_tweetid = tweet[:id]
-											
-				response = TheresThatSat satellite_name, tle_path, input_username, input_tweetid,
-						input_timestamp, output_timestamp, input_geo, input_lat, input_lon
+				response = TheresThatSat satellite_name, $catalog[satellite_name],
+						from_user(tweet), tweet[:id], input_timestamp, output_timestamp,
+						input_geo, input_lat, input_lon
+				
 				if ($testmode)
 					# In test mode, just print the response for inspection.
 					puts response
 				else
 					# Otherwise, post the response in reply to the input Tweet.
 					if (acc + 1 >= acc_available)
-						puts STDERR, format("Not responding to mention %s or earlier: rate limit.", input_tweetid.to_s)
+						puts STDERR, format("Not responding to mention %s or earlier: rate limit.", tweet[:id].to_s)
 						return acc
 					end
 					acc += 1
