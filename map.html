@@ -105,6 +105,11 @@
 			
 			.locinfo p {
 				margin: 0px;
+				margin-top: 6px;
+			}
+			
+			.locinfo p:first-child {
+				margin-top: 0;
 			}
 			
 		</style>
@@ -250,7 +255,7 @@
 				});
 				var caption = '<p><img src="' + icon_path + '"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
 						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
-						' moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
+						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
 				if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
 					var illumination = parseInt(q.value(illumination_arg));
@@ -258,16 +263,23 @@
 					var azimuth = parseFloat(q.value(azimuth_arg));
 					var solarelev = parseFloat(q.value(solarelev_arg));
 					
-					if (illumination == 0 && elevation > 0 && solarelev < -6) {
-						caption += '<p>' + satellite_name + ' was <strong>potentially visible</strong> to ' + user_name + ' at this point.</p>';
+					// consider that solarelev may need to be < -6 or so to be dark
+					if (illumination == 0 && elevation > 0 && solarelev < 0) {
+						caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from your location at this time ';
+						caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
 					} else {
-						caption += '<p>' + satellite_name + ' was probably <strong>not</strong> visible to ' + user_name + ' at this point.</p>';
+						caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from your location at this time. (';
+						
+						var reasons = [];
+						if (illumination != 0)
+							reasons.push('It was in the earth\'s shadow.');
+						if (elevation <= 0)
+							reasons.push('It was below the horizon.');
+						if (solarelev >= 0)
+							reasons.push('The sun was above the horizon.');
+						
+						caption += reasons.join(' ') + ')</p>';
 					}
-					
-					caption += '<ul><li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
-							'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
-							'<li>Satellite illumination: ' + illumination + '</li>' +
-							'<li>Solar elevation: ' + solarelev + '</li></ul>';
 				}
 				
 				var infopanel = AddInfoToPanel(panel, caption, id);
@@ -342,7 +354,6 @@
 				}
 				
 				
-				
 				// Create polyline to represent ground track.
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
 	
@@ -412,7 +423,7 @@
 						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
 							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
 									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply',
-									'When WheresThatSat replied');
+									'When @WheresThatSat replied');
 						}
 					
 					}
