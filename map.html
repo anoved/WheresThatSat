@@ -395,6 +395,12 @@
 					
 					}
 					
+					// Prompt user to ask about this satellite again
+					{
+						var askcaption = '<p><img src="images/tweet-reply.png" /> <a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s that sat now?</a></p>';
+						AddInfoToPanel(rightpanel, askcaption, 'ask');
+					}
+					
 					// Display referrer link iff it's a t.co shortlink
 					if ((document.referrer != '') && (document.referrer.split('/')[2] == 't.co')) {
 						var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
