@@ -186,10 +186,17 @@
 				else if (heading >= 354.37 && heading <= 360)
 					return "north";
 			}
-
+			
+			function AddInfoDivToPanel(panel, caption) {
+				var infodiv = document.createElement('div');
+				infodiv.className = 'locinfo';
+				infodiv.innerHTML = caption;
+				panel.appendChild(infodiv);
+			}
+			
 			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg, time_arg,
 					coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-					solarelv_arg, user_name, satellite_name, icon_path, panel) {
+					solarelev_arg, user_name, satellite_name, icon_path, panel) {
 				var altitude = parseFloat(q.value(altitude_arg));
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
@@ -224,20 +231,15 @@
 						caption += '<p>' + satellite_name + ' was probably <strong>not</strong> visible to ' + user_name + ' at this point.</p>';
 					}
 					
-					caption += '<ul>' +
-							'<li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
+					caption += '<ul><li>Elevation: ' + elevation + ' degrees above the horizon</li>' + 
 							'<li>Azimuth: ' + azimuth + ' degrees clockwise from north</li>' +
 							'<li>Satellite illumination: ' + illumination + '</li>' +
-							'<li>Solar elevation: ' + solarelev + '</li>' +
-							'</ul>';
+							'<li>Solar elevation: ' + solarelev + '</li></ul>';
 				}
 				
-				var infodiv = document.createElement('div');
-				infodiv.className = 'locinfo';
-				infodiv.innerHTML = caption;
-				panel.appendChild(infodiv);
+				AddInfoDivToPanel(panel, caption);
 			}
-			
+						
 			function initialize() {
 				
 				// Page layout divs
@@ -263,9 +265,6 @@
 						}
 				});
 				
-				// Cloud layer (requires &libraries=weather in script request)
-				//var cloudLayer = new google.maps.weather.CloudLayer();
-				//cloudLayer.setMap(map);
 				q = new QueryString();
 				
 				var satelliteName;
@@ -291,10 +290,10 @@
 				
 				// Create polyline to represent ground track.
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
-					
-					footer.style.height = "80px";
-					content.style.bottom = "80px";
-					
+	
+					rightpanel.style.width = "250px";
+					map_canvas.style.right = "250px";
+										
 					var traceStartTime = new Date(parseInt(q.value('t1')) * 1000);
 					var traceEndTime   = new Date(parseInt(q.value('t2')) * 1000);
 					
@@ -312,10 +311,10 @@
 					// Create the ground track and place it on the map
 					var trace = new google.maps.Polyline({
 							path: traceCoordinates,
-							strokeOpacity: 1.0,
+							strokeOpacity: 0.6,
 							strokeColor: "#008800",
 							strokeWeight: 8,
-							geodesic: false,
+							geodesic: true,
 							clickable: false,
 							map: map
 					});
@@ -323,47 +322,44 @@
 					// Adjust map extent to focus on ground track.
 					map.fitBounds(traceExtent);
 					
-					var traceCaption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
+					var caption = "<p>The green line depicts the ground track of " + satelliteName + " from " + traceStartTime.toTimeString() + " to " + traceEndTime.toTimeString() + ".</p>";
 					if (document.referrer != '') {
-						traceCaption += '<p>Referrer: ' + document.referrer + '</p>';
+						caption += '<p>Referrer: ' + document.referrer + '</p>';
 					}
-					var footer = document.getElementById("footer");
-					footer.innerHTML = traceCaption;
-				}
-				
-				// Create marker to represent Observer position.
-				if (q.exists('ol')) {
-					var ll = CoordinateParameterToLatLon(q.value('ol'));
-					var point = new google.maps.LatLng(ll[0], ll[1]);
-					var observerMarker = new RichMarker({
-							position: point,
-							animation: google.maps.Animation.DROP,
-							title: userName,
-							content: '<div><img src="images/user-location.png"><img src="https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini" style="left:12px; top:8px;position:absolute;"></div>',
-							anchor: RichMarkerPosition.BOTTOM,
-							draggable: false,
-							flat: true,
-							map: map
-					});
-				}
-				
-				// Create marker to represent Mention position.
-				if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 					
-					rightpanel.style.width = "250px";
-					map_canvas.style.right = "250px";
-					
-					MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
-							userName, satelliteName, 'images/green-droplet.png', rightpanel);				
-							
-					// Create marker to represent Reply position. Presence is only meaningful if mention position exists.
-					if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
-						
-						MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
-								userName, satelliteName, 'images/orange-droplet.png', rightpanel);
-					} // end reply
+					AddInfoDivToPanel(rightpanel, caption);
 				
-				} // end mention
+					// Create marker to represent Observer position.
+					if (q.exists('ol')) {
+						var ll = CoordinateParameterToLatLon(q.value('ol'));
+						var point = new google.maps.LatLng(ll[0], ll[1]);
+						var observerMarker = new RichMarker({
+								position: point,
+								animation: google.maps.Animation.DROP,
+								title: userName,
+								content: '<div><img src="images/user-location.png"><img src="https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini" style="left:12px; top:8px;position:absolute;"></div>',
+								anchor: RichMarkerPosition.BOTTOM,
+								draggable: false,
+								flat: true,
+								map: map
+						});
+					}
+					
+					// Create marker to represent Mention position.
+					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
+												
+						MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
+								userName, satelliteName, 'images/green-droplet.png', rightpanel);				
+								
+						// Create marker to represent Reply position, if specified.
+						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
+							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
+									userName, satelliteName, 'images/orange-droplet.png', rightpanel);
+						}
+					
+					}
+				
+				}
 			}
 		</script>
 		
