@@ -85,11 +85,20 @@
 				
 			}
 			
-			
+			div.satmarker {
+				border: 2px solid transparent;
+			}
+			#header {
+				background-color: #AAAADD;
+			}
+			#rightpanel {
+				background-color: #AAAADD;
+			}
 			.locinfo {
-				margin: 2px;
-				padding: 2px;
+				margin: 3px;
+				padding: 6px;
 				border: solid 1px gray;
+				background-color: white;
 				font-family: Verdana, sans-serif;
 				font-size: small;
 			}
@@ -187,22 +196,24 @@
 					return "north";
 			}
 			
-			function AddInfoDivToPanel(panel, caption) {
+			function AddInfoToPanel(panel, caption, id) {
 				var infodiv = document.createElement('div');
 				infodiv.className = 'locinfo';
+				infodiv.setAttribute('id', id + '-info');
 				infodiv.innerHTML = caption;
 				panel.appendChild(infodiv);
+				return infodiv;
 			}
 			
 			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg, time_arg,
 					coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-					solarelev_arg, user_name, satellite_name, icon_path, panel) {
+					solarelev_arg, user_name, satellite_name, icon_path, panel, id) {
 				var altitude = parseFloat(q.value(altitude_arg));
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
 				var speed = parseFloat(q.value(speed_arg));
 				var timestamp = new Date(parseInt(q.value(time_arg)) * 1000);
-				var iconHTML = '<div style="-webkit-transform: rotate(' + heading + 'deg); -webkit-transform-origin: 50% 0%;"><img src="' + icon_path + '"></div>';
+				var iconHTML = '<div id="' + id + '-marker" class="satmarker" style="-webkit-transform: rotate(' + heading + 'deg); -webkit-transform-origin: 50% 0%;"><img src="' + icon_path + '"></div>';
 								//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 				var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
 				var point = new google.maps.LatLng(ll[0], ll[1]);
@@ -237,7 +248,26 @@
 							'<li>Solar elevation: ' + solarelev + '</li></ul>';
 				}
 				
-				AddInfoDivToPanel(panel, caption);
+				var infopanel = AddInfoToPanel(panel, caption, id);
+				
+				// highlight info panels when pointing at markers
+				google.maps.event.addListener(marker, 'mouseover', function() {
+					infopanel.style.backgroundColor = "#BFCCDC";
+				});
+				google.maps.event.addListener(marker, 'mouseout', function() {
+					infopanel.style.backgroundColor = "white";
+				});
+				
+				// highlight markers when pointing at info panels
+				infopanel.addEventListener('mouseover', function() {
+					var markerdiv = document.getElementById(id + '-marker');
+					markerdiv.style.border = "2px solid blue";
+				});
+				
+				infopanel.addEventListener('mouseout', function() {
+					var markerdiv = document.getElementById(id + '-marker');
+					markerdiv.style.border = "2px solid transparent";
+				});
 			}
 						
 			function initialize() {
@@ -251,6 +281,7 @@
 				
 				// Create the basemap.
 				var map = new google.maps.Map(map_canvas, {
+						backgroundColor: "#AAAADD",
 						center: new google.maps.LatLng(0, 0),
 						zoom: 2,
 						mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -327,7 +358,7 @@
 						caption += '<p>Referrer: ' + document.referrer + '</p>';
 					}
 					
-					AddInfoDivToPanel(rightpanel, caption);
+					AddInfoToPanel(rightpanel, caption, 'trace');
 				
 					// Create marker to represent Observer position.
 					if (q.exists('ol')) {
@@ -349,12 +380,12 @@
 					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 												
 						MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
-								userName, satelliteName, 'images/green-droplet.png', rightpanel);				
+								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention');				
 								
 						// Create marker to represent Reply position, if specified.
 						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
 							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
-									userName, satelliteName, 'images/orange-droplet.png', rightpanel);
+									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply');
 						}
 					
 					}
