@@ -296,7 +296,7 @@
 							position: point,
 							animation: google.maps.Animation.DROP,
 							title: userName,
-							content: '<div><img src="images/user-location.png"></div>',
+							content: '<div><img src="images/user-location.png"><img src="https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini" style="left:12px; top:8px;position:absolute;"></div>',
 							anchor: RichMarkerPosition.BOTTOM,
 							draggable: false,
 							flat: true,
@@ -333,16 +333,7 @@
 					//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 					
 					var headingDirection = HeadingToCompassDirection(mentionHeading);
-					var mentionCaption = '<p><img src="images/green-droplet.png" style="float:left;">At ' + mentionTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + mentionAltitude + ' km moving ' + headingDirection + ' (' + mentionHeading + ' degrees) at ' + mentionSpeed + ' km/s.</p>';
-						/*+
-						'<ul>' +
-						'<li>Time: ' + mentionTime.toTimeString() + '</li>' +
-						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
-						'<li>Altitude: ' + mentionAltitude + ' km</li>' +
-						'<li>Speed: ' + mentionSpeed + ' km/s</li>' +
-						'<li>Heading: ' + mentionHeading + ' degrees</li>' +
-						'</ul>';*/
-					
+					var mentionCaption = '<p><img src="images/green-droplet.png" style="float:left;">At ' + mentionTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + mentionAltitude + ' km moving ' + headingDirection + ' (' + mentionHeading + ' degrees) at ' + mentionSpeed + ' km/s.</p>';					
 										
 					if (q.exists('mi') && q.exists('me') && q.exists('mz') && q.exists('mo')) {
 						
@@ -402,16 +393,6 @@
 			
 					var headingDirection = HeadingToCompassDirection(replyHeading);
 					var replyCaption = '<p><img src="images/orange-droplet.png" style="float:left;">At ' + replyTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + replyAltitude + ' km moving ' + headingDirection + ' (' + replyHeading + ' degrees) at ' + replySpeed + ' km/s.</p>';
-
-					/*	'<p><img src="images/orange-droplet.png"> When WheresThatSat replied, it was here:</p>' +
-						'<ul>' +
-						'<li>Time: ' + replyTime.toTimeString() + '</li>' +
-						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
-						'<li>Altitude: ' + replyAltitude + ' km</li>' +
-						'<li>Speed: ' + replySpeed + ' km/s</li>' +
-						'<li>Heading: ' + replyHeading + ' degrees</li>' +
-						'</ul>'; */
-
 
 					if (q.exists('ri') && q.exists('re') && q.exists('rz') && q.exists('ro')) {
 						
