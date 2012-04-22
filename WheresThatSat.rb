@@ -60,16 +60,16 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	m = GoGoGTG(mention_cmd)[0]
 	mention_lat = m[1].to_f
 	mention_lon = m[2].to_f
-	url += format '&ml=%.4f,%.4f&ma=%f&ms=%f&mh=%f&mt=%d', m[1], m[2], m[3], m[4], m[5], mention_time
-	if is_geo then url += format'&mi=%d&me=%f&mz=%f&mo=%f', m[6], m[7], m[8], m[9] end
+	url += format '&ml=%.4f,%.4f&ma=%.2f&ms=%.2f&mh=%.2f&mt=%d', m[1], m[2], m[3], m[4], m[5], mention_time
+	if is_geo then url += format'&mi=%d&me=%.2f&mz=%.2f&mo=%.2f', m[6], m[7], m[8], m[9] end
 	
 	# response (none if response_time < 0)
 	if (response_time >= 0)
 		reply_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
 		if is_geo then reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo_lat, geo_lon end
 		r = GoGoGTG(reply_cmd)[0]
-		url += format '&rl=%.4f,%.4f&ra=%f&rs=%f&rh=%f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
-		if is_geo then url += format '&ri=%d&re=%f&rz=%f&ro=%f', r[6], r[7], r[8], r[9] end
+		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
+		if is_geo then url += format '&ri=%d&re=%.2f&rz=%.2f&ro=%.2f', r[6], r[7], r[8], r[9] end
 	end
 
 	# return complete reply text
