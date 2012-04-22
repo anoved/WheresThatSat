@@ -51,21 +51,21 @@
 			#content {
 			
 				top: 30px; /* header height */
-				bottom: 30px; /* footer height */
+				bottom: 0; /* footer height */
 			}
 			
 			#leftpanel {
 				
 				left: 0;
-				width: 200px;
+				width: 0; /* 200px */
 				height: 100%;
 			
 			}
 			
 			#map_canvas {
 			
-				left: 200px; /* leftpanel width */
-				right: 200px; /* rightpanel width */
+				left: 0; /* leftpanel width */
+				right: 0; /* rightpanel width */
 				height: 100%;
 			
 			}
@@ -73,7 +73,7 @@
 			#rightpanel {
 				
 				right: 0;
-				width: 200px;
+				width: 0; /* 200px */
 				height: 100%;
 				
 			}
@@ -81,17 +81,10 @@
 			#footer {
 			
 				bottom: 0;
-				height: 30px;
+				height: 0;
 				
 			}
 			
-			/*#wts_logo {
-				padding: 2px;
-			}*/
-			
-			/*#wts_twitter {
-				padding: 10px;
-			}*/
 		</style>
 		
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
@@ -110,9 +103,16 @@
 		<script type="text/javascript">
 						
 			function initialize() {
-								
+				
+				// Page layout divs
+				var content = document.getElementById("content");
+				var leftpanel = document.getElementById("leftpanel");
+				var map_canvas = document.getElementById("map_canvas");
+				var rightpanel = document.getElementById("rightpanel");
+				var footer = document.getElementById("footer");
+				
 				// Create the basemap.
-				var map = new google.maps.Map(document.getElementById("map_canvas"), {
+				var map = new google.maps.Map(map_canvas, {
 						center: new google.maps.LatLng(0, 0),
 						zoom: 2,
 						mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -169,6 +169,9 @@
 				// Create polyline to represent ground track.
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
 					
+					footer.style.height = "80px";
+					content.style.bottom = "80px";
+					
 					var traceStartTime = new Date(parseInt(q.value('t1')) * 1000);
 					var traceEndTime   = new Date(parseInt(q.value('t2')) * 1000);
 					
@@ -224,6 +227,9 @@
 				
 				// Create marker to represent Mention position.
 				if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
+					
+					leftpanel.style.width = "200px";
+					map_canvas.style.right = "200px";
 					
 					var mentionAltitude = parseFloat(q.value('ma'));
 					var mentionHeading = parseFloat(q.value('mh'));
@@ -350,7 +356,7 @@
 	<body onload="initialize()">
 		
 		<div id="header" class="row">
-		Where's That Sat? <a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
+		Where's That Sat? <!-- <a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>-->
 		</div>
 		
 		<div id="content" class="row">
@@ -360,9 +366,6 @@
 			</div>
 			
 			<div id="map_canvas" class="col"></div>
-			<!-- <div id="wts_logo">
-				<img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" />
-			</div> -->
 						
 			<div id="rightpanel" class="col scrolly">
 			right
