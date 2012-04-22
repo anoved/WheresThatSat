@@ -110,7 +110,78 @@
 
 		
 		<script type="text/javascript">
-						
+			
+			// heading must be in range [0-360]
+			function HeadingToCompassDirection(heading) {
+				// per https://en.wikipedia.org/wiki/Boxing_the_compass
+				if (heading >= 0 && heading < 5.62)
+					return "north";
+				else if (heading >= 5.62 && heading < 16.87)
+					return "north by east";
+				else if (heading >= 16.87 && heading < 28.12)
+					return "north-northeast";
+				else if (heading >= 28.12 && heading < 39.37)
+					return "northeast by north";
+				else if (heading >= 39.37 && heading < 50.62)
+					return "northeast";
+				else if (heading >= 50.62 && heading < 61.87)
+					return "northeast by east";
+				else if (heading >= 61.87 && heading < 73.12)
+					return "east-northeast";
+				else if (heading >= 73.12 && heading < 84.37)
+					return "east by north";
+				else if (heading >= 84.37 && heading < 95.62)
+					return "east";
+				else if (heading >= 95.62 && heading < 106.87)
+					return "east by south";
+				else if (heading >= 106.87 && heading < 118.12)
+					return "east-southeast";
+				else if (heading >= 118.12 && heading < 129.37)
+					return "southeast by east";
+				else if (heading >= 129.37 && heading < 140.62)
+					return "southeast";
+				else if (heading >= 140.62 && heading < 151.87)
+					return "southeast by south";
+				else if (heading >= 151.87 && heading < 163.12)
+					return "south-southeast";
+				else if (heading >= 163.12 && heading < 174.37)
+					return "south by east";
+				else if (heading >= 174.37 && heading < 185.62)
+					return "south";
+				else if (heading >= 185.62 && heading < 196.87)
+					return "south by west";
+				else if (heading >= 196.87 && heading < 208.12)
+					return "south-southwest";
+				else if (heading >= 208.12 && heading < 219.37)
+					return "southwest by south";
+				else if (heading >= 219.37 && heading < 230.62)
+					return "southwest";
+				else if (heading >= 230.62 && heading < 241.87)
+					return "southwest by west";
+				else if (heading >= 241.87 && heading < 253.12)
+					return "west-southwest";
+				else if (heading >= 253.12 && heading < 264.37)
+					return "west by south";
+				else if (heading >= 264.37 && heading < 275.62)
+					return "west";
+				else if (heading >= 275.62 && heading < 286.87)
+					return "west by north";
+				else if (heading >= 286.87 && heading < 298.12)
+					return "west-northwest";
+				else if (heading >= 298.12 && heading < 309.37)
+					return "northwest by west";
+				else if (heading >= 309.37 && heading < 320.62)
+					return "northwest";
+				else if (heading >= 320.62 && heading < 331.87)
+					return "northwest by north";
+				else if (heading >= 331.87 && heading < 343.12)
+					return "north-northwest";
+				else if (heading >= 343.12 && heading < 354.37)
+					return "north by west";
+				else if (heading >= 354.37 && heading <= 360)
+					return "north";
+			}
+			
 			function initialize() {
 				
 				// Page layout divs
@@ -132,7 +203,7 @@
 						streetViewControl: false,
 						overviewMapControl: true,
 						overviewMapControlOptions: {
-							opened: true
+							opened: false
 						}
 				});
 				
@@ -261,15 +332,16 @@
 					
 					//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 					
-					var mentionCaption =
-						'<p><img src="images/green-droplet.png">When you mentioned the satellite, it was here:</p>' +
+					var headingDirection = HeadingToCompassDirection(mentionHeading);
+					var mentionCaption = '<p><img src="images/green-droplet.png" style="float:left;">At ' + mentionTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + mentionAltitude + ' km moving ' + headingDirection + ' (' + mentionHeading + ' degrees) at ' + mentionSpeed + ' km/s.</p>';
+						/*+
 						'<ul>' +
 						'<li>Time: ' + mentionTime.toTimeString() + '</li>' +
 						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
 						'<li>Altitude: ' + mentionAltitude + ' km</li>' +
 						'<li>Speed: ' + mentionSpeed + ' km/s</li>' +
 						'<li>Heading: ' + mentionHeading + ' degrees</li>' +
-						'</ul>';
+						'</ul>';*/
 					
 										
 					if (q.exists('mi') && q.exists('me') && q.exists('mz') && q.exists('mo')) {
@@ -328,16 +400,17 @@
 							map: map
 					});
 			
-			
-					var replyCaption = 
-						'<p><img src="images/orange-droplet.png"> When WheresThatSat replied, it was here:</p>' +
+					var headingDirection = HeadingToCompassDirection(replyHeading);
+					var replyCaption = '<p><img src="images/orange-droplet.png" style="float:left;">At ' + replyTime.toUTCString() + ', ' + satelliteName + ' was above ' + latlon[0] + ' ' + latlon[1] + ' at an altitude of ' + replyAltitude + ' km moving ' + headingDirection + ' (' + replyHeading + ' degrees) at ' + replySpeed + ' km/s.</p>';
+
+					/*	'<p><img src="images/orange-droplet.png"> When WheresThatSat replied, it was here:</p>' +
 						'<ul>' +
 						'<li>Time: ' + replyTime.toTimeString() + '</li>' +
 						'<li>Lat/Lon: ' + latlon[0] + ', ' + latlon[1] + '</li>' +
 						'<li>Altitude: ' + replyAltitude + ' km</li>' +
 						'<li>Speed: ' + replySpeed + ' km/s</li>' +
 						'<li>Heading: ' + replyHeading + ' degrees</li>' +
-						'</ul>';
+						'</ul>'; */
 
 
 					if (q.exists('ri') && q.exists('re') && q.exists('rz') && q.exists('ro')) {
