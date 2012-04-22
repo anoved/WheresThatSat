@@ -205,6 +205,19 @@
 				//return timestamp.toUTCString();
 			}
 			
+			function FormatLatLon(latlon) {
+				var lat = latlon[0];
+				var lon = latlon[1];
+				var lat_hem = 'N';
+				var lon_hem = 'E';
+				if (lat < 0)
+					lat_hem = 'S';
+				if (lon < 0)
+					lon_hem = 'W';
+				return Math.abs(lat).toString() + lat_hem + ' ' +
+						Math.abs(lon).toString() + lon_hem;
+			}
+			
 			function AddInfoToPanel(panel, caption, id) {
 				var infodiv = document.createElement('div');
 				infodiv.className = 'locinfo';
@@ -216,7 +229,7 @@
 			
 			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg, time_arg,
 					coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-					solarelev_arg, user_name, satellite_name, icon_path, panel, id) {
+					solarelev_arg, user_name, satellite_name, icon_path, panel, id, intro) {
 				var altitude = parseFloat(q.value(altitude_arg));
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
@@ -235,9 +248,9 @@
 						map: map,
 						content: iconHTML
 				});
-				var caption = '<p><img src="' + icon_path + '"></p><p>On ' + FormatTimestamp(timestamp) +
-						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + ll[0] + ' ' + ll[1] +
-						' moving ' + direction + ' (' + heading + ' degrees) at ' + speed + ' km/s.</p>';
+				var caption = '<p><img src="' + icon_path + '"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
+						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
+						' moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
 				if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
 					var illumination = parseInt(q.value(illumination_arg));
@@ -361,8 +374,9 @@
 							map: map
 					});
 					
-					
-					var caption = '<p>The green line depicts the ground track of <a href="http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName) + '">' + satelliteName + "</a> from " + FormatTimestamp(traceStartTime) + " to " + FormatTimestamp(traceEndTime) + ".</p>";
+					var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
+					var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
+					var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
 					
 					AddInfoToPanel(rightpanel, caption, 'trace');
 				
@@ -391,12 +405,14 @@
 					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 												
 						MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
-								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention');				
+								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention',
+								'When you <a href="' + tweetlink + '">mentioned</a> it');				
 								
 						// Create marker to represent Reply position, if specified.
 						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
 							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
-									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply');
+									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply',
+									'When WheresThatSat replied');
 						}
 					
 					}
