@@ -13,10 +13,79 @@
 				margin: 0;
 				padding: 0;
 			}
-			#map_canvas {
-				height: 100%;
-				width: 100%;
+			
+			.row, .col {
+				overflow: hidden;
+				position: absolute;
 			}
+			
+			.row {
+				left: 0;
+				right: 0;
+			}
+			
+			.col {
+				top: 0;
+				bottom: 0;
+			}
+			
+			.scrollx {
+				overflow-x: auto;
+			}
+			
+			.scrolly {
+				overflow-y: auto;
+			}
+			
+			.scrollx, .scrolly {
+				-webkit-overflow-scrolling: touch;
+			}
+			
+			#header {
+			
+				top: 0;
+				height: 30px;
+				
+			}
+			
+			#content {
+			
+				top: 30px; /* header height */
+				bottom: 30px; /* footer height */
+			}
+			
+			#leftpanel {
+				
+				left: 0;
+				width: 200px;
+				height: 100%;
+			
+			}
+			
+			#map_canvas {
+			
+				left: 200px; /* leftpanel width */
+				right: 200px; /* rightpanel width */
+				height: 100%;
+			
+			}
+			
+			#rightpanel {
+				
+				right: 0;
+				width: 200px;
+				height: 100%;
+				
+			}
+			
+			#footer {
+			
+				bottom: 0;
+				height: 30px;
+				
+			}
+			
+			
 			#wts_logo {
 				padding: 2px;
 			}
@@ -266,14 +335,33 @@
 		
 	</head>
 	<body onload="initialize()">
-		<div id="map_canvas"></div>
-		<div id="wts_logo">
-			<img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" />
+		
+		<div id="header" class="row">
+		header
 		</div>
-		<!-- <div id="wts_twitter">
-			<a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
-		</div> -->
-		<div id="footer">
+		
+		<div id="content" class="row">
+		
+			<div id="leftpanel" class="col scrolly">
+			left
+			</div>
+			
+			<div id="map_canvas" class="col"></div>
+			<div id="wts_logo">
+				<img src="images/wheresthatsat-badge.png" alt="Where's That Sat logo" />
+			</div>
+			<!-- <div id="wts_twitter">
+				<a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a>
+			</div> -->
+			
+			<div id="rightpanel" class="col scrolly">
+			right
+			</div>
+		
+		</div>
+		
+		<div id="footer" class="row">
+		footer
 		</div>
 	</body>
 </html>
