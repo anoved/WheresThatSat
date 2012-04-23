@@ -20,6 +20,8 @@ require 'yaml'
 # for url encoding
 require 'cgi'
 
+require 'geocoder'
+
 def GoGoGTG(gtg_args)
 	gtg_cmd = './gtg ' + gtg_args
 	gtg_pipe = IO.popen(gtg_cmd)
@@ -204,20 +206,20 @@ def RespondToMentions(acc_available)
 				input_geo = false
 				input_lat = 0
 				input_lon = 0
-				if (tweet[:text].match(/\#latlon([+-]?\d+\.?\d*),([+-]?\d+\.?\d*)/i))
-					# A location was explicitly specified in the tweet.
-					# (Support more flexible and intuitive location specifications
-					# - including geocoding of city names, for example.)
-					input_geo = true
-					input_lat = $1.to_f
-					input_lon = $2.to_f
-					if $testmode then puts format "Explicit geo: %f, %f", input_lat, input_lon end
+				if (tweet[:text].match(/\#place "([^"]+)"/i))
+					# A place was explicitly specified in the tweet.
+					geocoding_results = Geocoder.search($1)
+					if (geocoding_results.length > 0)
+						# we just use the first result, regardless of how many matches
+						input_geo = true
+						input_lat = geocoding_results[0].latitude
+						input_lon = geocoding_results[0].longitude
+					end
 				elsif (tweet[:geo] != nil)
 					# A point location is given
 					input_geo = true
 					input_lat = tweet[:geo][:coordinates][0]
 					input_lon = tweet[:geo][:coordinates][1]
-					if $testmode then puts format "Implicit point geo: %f, %f", input_lat, input_lon end
 				elsif (tweet[:place] != nil)
 					# A place location is given
 					input_geo = true
@@ -225,7 +227,6 @@ def RespondToMentions(acc_available)
 					# bit naive here -- untested on dateline, etc.
 					input_lat = (bbox[0][1] + bbox[2][1]) / 2.0
 					input_lon = (bbox[0][0] + bbox[2][0]) / 2.0
-					if $testmode then puts format "Implicit place geo: %f, %f", input_lat, input_lon end
 				end
 	
 				response = TheresThatSat satellite_name, $catalog[satellite_name],
