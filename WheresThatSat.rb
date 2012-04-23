@@ -40,7 +40,7 @@ end
 # response_time - integer unix timestamp of reply time. Suppress reply time marker if < 0.
 # is_geo, boolean whether observer location is defined (true if yes)
 #
-def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, is_geo, geo_lat, geo_lon)
+def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, is_geo, geo_lat, geo_lon, geo_name)
 	
 	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
 	
@@ -55,7 +55,7 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	end
 	
 	# observer
-	if is_geo then url += format '&ol=%.4f,%.4f', geo_lat, geo_lon end
+	if is_geo then url += format '&ol=%.4f,%.4f&on=%s', geo_lat, geo_lon, CGI.escape(geo_name) end
 	
 	# mention
 	mention_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
@@ -132,27 +132,36 @@ def RespondToSearches(acc_available, search_quota=20)
 			# time
 			input_timestamp = ParseSearchTimestamp(tweet[:created_at])
 			output_timestamp = Time.now.utc
+	
+			user_name = from_user(tweet)
 			
 			# location
 			input_geo = false
 			input_lat = 0
 			input_lon = 0
+			geo_name = ''
 			if (tweet[:geo] != nil)
 				input_geo = true
 				input_lat = tweet[:geo][:coordinates][0]
 				input_lon = tweet[:geo][:coordinates][1]
+				if (user_name[-1,1] == 's')
+					geo_name = "#{user_name}' coordinates"
+				else
+					geo_name = "#{user_name}'s coordinates"
+				end
 			elsif (tweet[:place] != nil)
 				input_geo = true
 				bbox = tweet[:place][:bounding_box][:coordinates][0]
 				input_lat = (bbox[0][1] + bbox[2][1]) / 2.0
 				input_lon = (bbox[0][0] + bbox[2][0]) / 2.0
+				geo_name = tweet[:place][:name]
 			end
 			
 			# (No explicit time/location tags expected in non-mention search results)
 						
 			response = TheresThatSat satellite_name, $catalog[satellite_name],
-					from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-					input_geo, input_lat, input_lon
+					user_name, tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
+					input_geo, input_lat, input_lon, geo_name
 			
 			if $testmode
 				puts response
@@ -204,10 +213,13 @@ def RespondToMentions(acc_available)
 					end
 				end
 				
+				user_name = from_user(tweet)
+				
 				# By default, no location associated with input.
 				input_geo = false
 				input_lat = 0
 				input_lon = 0
+				geo_name = ''
 				if (tweet[:text].match(/\#place "([^"]+)"/i))
 					# A place was explicitly specified in the tweet.
 					geocoding_results = Geocoder.search($1)
@@ -216,12 +228,19 @@ def RespondToMentions(acc_available)
 						input_geo = true
 						input_lat = geocoding_results[0].latitude
 						input_lon = geocoding_results[0].longitude
+						geo_name = geocoding_results[0].address
 					end
 				elsif (tweet[:geo] != nil)
 					# A point location is given
 					input_geo = true
 					input_lat = tweet[:geo][:coordinates][0]
 					input_lon = tweet[:geo][:coordinates][1]
+					# no particular name associated with :geo
+					if (user_name[-1,1] == 's')
+						geo_name = "#{user_name}' coordinates"
+					else
+						geo_name = "#{user_name}'s coordinates"
+					end
 				elsif (tweet[:place] != nil)
 					# A place location is given
 					input_geo = true
@@ -229,11 +248,12 @@ def RespondToMentions(acc_available)
 					# bit naive here -- untested on dateline, etc.
 					input_lat = (bbox[0][1] + bbox[2][1]) / 2.0
 					input_lon = (bbox[0][0] + bbox[2][0]) / 2.0
+					geo_name = tweet[:place][:name]
 				end
 	
 				response = TheresThatSat satellite_name, $catalog[satellite_name],
-						from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-						input_geo, input_lat, input_lon
+						user_name, tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
+						input_geo, input_lat, input_lon, geo_name
 				
 				if ($testmode)
 					# In test mode, just print the response for inspection.
