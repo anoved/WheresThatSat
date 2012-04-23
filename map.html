@@ -75,6 +75,9 @@
 				
 			}
 			
+			/* Have a site-wide stylesheet for shared styles,
+			   and a separate map-page-specific stylesheet for this layout. */
+			
 			div.satmarker, #observer-marker {
 				border: 2px solid transparent;
 			}
@@ -111,6 +114,29 @@
 		<script type="text/javascript" src="scripts/richmarker.js"></script>
 		<script type="text/javascript">
 			
+			function AddHighlights(marker, marker_id, panel) {
+												
+				// Highlight panel when mousing over map markers
+				google.maps.event.addListener(marker, 'mouseover', function() {
+						var marker_content = document.getElementById(marker_id);
+						marker_content.style.borderColor = "blue";
+						panel.style.borderColor = "blue";});
+				google.maps.event.addListener(marker, 'mouseout', function() {
+						var marker_content = document.getElementById(marker_id);
+						marker_content.style.borderColor = "transparent";
+						panel.style.borderColor = "gray";});
+				
+				// Highlight map markers when mousing over panel
+				panel.addEventListener('mouseover', function() {
+						var marker_content = document.getElementById(marker_id);
+						panel.style.borderColor = "blue";
+						marker_content.style.borderColor = "blue";});
+				panel.addEventListener('mouseout', function() {
+						var marker_content = document.getElementById(marker_id);
+						panel.style.borderColor = "gray";
+						marker_content.style.borderColor = "transparent";});
+			}
+			
 			function CoordinateParameterToLatLon(coordinates) {
 				var latlon_strings = coordinates.split(',');
 				return latlon_strings.map(function(x) {return parseFloat(x);});
@@ -119,77 +145,43 @@
 			// heading must be in range [0-360]
 			function HeadingToCompassDirection(heading) {
 				// per https://en.wikipedia.org/wiki/Boxing_the_compass
-				if (heading >= 0 && heading < 5.62)
-					return "north";
-				else if (heading >= 5.62 && heading < 16.87)
-					return "north by east";
-				else if (heading >= 16.87 && heading < 28.12)
-					return "north-northeast";
-				else if (heading >= 28.12 && heading < 39.37)
-					return "northeast by north";
-				else if (heading >= 39.37 && heading < 50.62)
-					return "northeast";
-				else if (heading >= 50.62 && heading < 61.87)
-					return "northeast by east";
-				else if (heading >= 61.87 && heading < 73.12)
-					return "east-northeast";
-				else if (heading >= 73.12 && heading < 84.37)
-					return "east by north";
-				else if (heading >= 84.37 && heading < 95.62)
-					return "east";
-				else if (heading >= 95.62 && heading < 106.87)
-					return "east by south";
-				else if (heading >= 106.87 && heading < 118.12)
-					return "east-southeast";
-				else if (heading >= 118.12 && heading < 129.37)
-					return "southeast by east";
-				else if (heading >= 129.37 && heading < 140.62)
-					return "southeast";
-				else if (heading >= 140.62 && heading < 151.87)
-					return "southeast by south";
-				else if (heading >= 151.87 && heading < 163.12)
-					return "south-southeast";
-				else if (heading >= 163.12 && heading < 174.37)
-					return "south by east";
-				else if (heading >= 174.37 && heading < 185.62)
-					return "south";
-				else if (heading >= 185.62 && heading < 196.87)
-					return "south by west";
-				else if (heading >= 196.87 && heading < 208.12)
-					return "south-southwest";
-				else if (heading >= 208.12 && heading < 219.37)
-					return "southwest by south";
-				else if (heading >= 219.37 && heading < 230.62)
-					return "southwest";
-				else if (heading >= 230.62 && heading < 241.87)
-					return "southwest by west";
-				else if (heading >= 241.87 && heading < 253.12)
-					return "west-southwest";
-				else if (heading >= 253.12 && heading < 264.37)
-					return "west by south";
-				else if (heading >= 264.37 && heading < 275.62)
-					return "west";
-				else if (heading >= 275.62 && heading < 286.87)
-					return "west by north";
-				else if (heading >= 286.87 && heading < 298.12)
-					return "west-northwest";
-				else if (heading >= 298.12 && heading < 309.37)
-					return "northwest by west";
-				else if (heading >= 309.37 && heading < 320.62)
-					return "northwest";
-				else if (heading >= 320.62 && heading < 331.87)
-					return "northwest by north";
-				else if (heading >= 331.87 && heading < 343.12)
-					return "north-northwest";
-				else if (heading >= 343.12 && heading < 354.37)
-					return "north by west";
-				else if (heading >= 354.37 && heading <= 360)
-					return "north";
+				if (heading >= 0 && heading < 5.62) return "north";
+				else if (heading >= 5.62 && heading < 16.87) return "north by east";
+				else if (heading >= 16.87 && heading < 28.12) return "north-northeast";
+				else if (heading >= 28.12 && heading < 39.37) return "northeast by north";
+				else if (heading >= 39.37 && heading < 50.62) return "northeast";
+				else if (heading >= 50.62 && heading < 61.87) return "northeast by east";
+				else if (heading >= 61.87 && heading < 73.12) return "east-northeast";
+				else if (heading >= 73.12 && heading < 84.37) return "east by north";
+				else if (heading >= 84.37 && heading < 95.62) return "east";
+				else if (heading >= 95.62 && heading < 106.87) return "east by south";
+				else if (heading >= 106.87 && heading < 118.12) return "east-southeast";
+				else if (heading >= 118.12 && heading < 129.37) return "southeast by east";
+				else if (heading >= 129.37 && heading < 140.62) return "southeast";
+				else if (heading >= 140.62 && heading < 151.87) return "southeast by south";
+				else if (heading >= 151.87 && heading < 163.12) return "south-southeast";
+				else if (heading >= 163.12 && heading < 174.37) return "south by east";
+				else if (heading >= 174.37 && heading < 185.62) return "south";
+				else if (heading >= 185.62 && heading < 196.87) return "south by west";
+				else if (heading >= 196.87 && heading < 208.12) return "south-southwest";
+				else if (heading >= 208.12 && heading < 219.37) return "southwest by south";
+				else if (heading >= 219.37 && heading < 230.62) return "southwest";
+				else if (heading >= 230.62 && heading < 241.87) return "southwest by west";
+				else if (heading >= 241.87 && heading < 253.12) return "west-southwest";
+				else if (heading >= 253.12 && heading < 264.37) return "west by south";
+				else if (heading >= 264.37 && heading < 275.62) return "west";
+				else if (heading >= 275.62 && heading < 286.87) return "west by north";
+				else if (heading >= 286.87 && heading < 298.12) return "west-northwest";
+				else if (heading >= 298.12 && heading < 309.37) return "northwest by west";
+				else if (heading >= 309.37 && heading < 320.62) return "northwest";
+				else if (heading >= 320.62 && heading < 331.87) return "northwest by north";
+				else if (heading >= 331.87 && heading < 343.12) return "north-northwest";
+				else if (heading >= 343.12 && heading < 354.37) return "north by west";
+				else if (heading >= 354.37 && heading <= 360) return "north";
 			}
 			
 			function FormatTimestamp(timestamp) {
 				return timestamp.toDateString() + ' at ' + timestamp.toTimeString();
-				//return timestamp.toUTCString();
 			}
 			
 			function FormatLatLon(latlon) {
@@ -197,10 +189,8 @@
 				var lon = latlon[1];
 				var lat_hem = 'N';
 				var lon_hem = 'E';
-				if (lat < 0)
-					lat_hem = 'S';
-				if (lon < 0)
-					lon_hem = 'W';
+				if (lat < 0) lat_hem = 'S';
+				if (lon < 0) lon_hem = 'W';
 				return Math.abs(lat).toString() + lat_hem + ' ' +
 						Math.abs(lon).toString() + lon_hem;
 			}
@@ -265,33 +255,12 @@
 				
 				var infopanel = AddInfoToPanel(panel, caption, id);
 				
-				// highlight info panels when pointing at markers
-				google.maps.event.addListener(marker, 'mouseover', function() {
-					infopanel.style.borderColor = "blue";
-					
-				});
-				google.maps.event.addListener(marker, 'mouseout', function() {
-					infopanel.style.borderColor = "gray";
-				});
-				
-				// highlight markers when pointing at info panels
-				infopanel.addEventListener('mouseover', function() {
-					var markerdiv = document.getElementById(id + '-marker');
-					markerdiv.style.borderColor = "blue";
-					infopanel.style.borderColor = "blue";
-				});
-				
-				infopanel.addEventListener('mouseout', function() {
-					var markerdiv = document.getElementById(id + '-marker');
-					markerdiv.style.borderColor = "transparent";
-					infopanel.style.borderColor = "gray";
-				});
+				AddHighlights(marker, id + '-marker', infopanel);
 			}
 						
 			function initialize() {
 				
 				// Page layout divs
-				var content = document.getElementById("content");
 				var map_canvas = document.getElementById("map_canvas");
 				var rightpanel = document.getElementById("rightpanel");
 				var footer = document.getElementById("footer");
@@ -315,26 +284,16 @@
 				q = new QueryString();
 				
 				var satelliteName;
-				if (q.exists('sn')) {
-					satelliteName = q.value('sn');
-				} else {
-					satelliteName = 'the satellite';
-				}
+				if (q.exists('sn')) satelliteName = q.value('sn');
+				else satelliteName = 'the satellite';
 				
 				var userName;
-				if (q.exists('un')) {
-					userName = q.value('un');
-				} else {
-					userName = 'you';
-				}
+				if (q.exists('un')) userName = q.value('un');
+				else userName = 'you';
 				
 				var tweetID;
-				if (q.exists('ut')) {
-					tweetID = q.value('ut');
-				} else {
-					tweetID = 0;
-				}
-				
+				if (q.exists('ut')) tweetID = q.value('ut');
+				else tweetID = 0;
 				
 				// Create polyline to represent ground track.
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
@@ -391,24 +350,7 @@
 						var obscaption = '<p><img src="images/user-location.png" /></p><p>Your location is ' + FormatLatLon(ll) + '.</p>';
 						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
 						
-						
-						google.maps.event.addListener(observerMarker, 'mouseover', function() {
-							obsinfo.style.borderColor = "blue";
-						});
-						google.maps.event.addListener(observerMarker, 'mouseout', function() {
-							obsinfo.style.borderColor = "gray";
-						});
-						
-						obsinfo.addEventListener('mouseover', function() {
-							var md = document.getElementById('observer-marker');
-							md.style.borderColor = "blue";
-							obsinfo.style.borderColor = "blue";
-						});
-						obsinfo.addEventListener('mouseout', function() {
-							var md = document.getElementById('observer-marker');
-							md.style.borderColor = "transparent";
-							obsinfo.style.borderColor = "gray";
-						});
+						AddHighlights(observerMarker, 'observer-marker', obsinfo);
 					}
 
 					// Adjust map extent to focus on ground track.
