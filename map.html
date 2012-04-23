@@ -204,14 +204,14 @@
 				return infodiv;
 			}
 			
-			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg, time_arg,
+			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 					coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-					solarelev_arg, user_name, satellite_name, icon_path, panel, id, intro) {
+					solarelev_arg, user_name, satellite_name, icon_path, panel, id, intro, future) {
+					
 				var altitude = parseFloat(q.value(altitude_arg));
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
 				var speed = parseFloat(q.value(speed_arg));
-				var timestamp = new Date(parseInt(q.value(time_arg)) * 1000);
 				var iconHTML = '<div id="' + id + '-marker" class="satmarker" style="-webkit-transform: rotate(' + heading + 'deg); -webkit-transform-origin: 50% 0%;"><img src="' + icon_path + '"></div>';
 								//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 				var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
@@ -224,8 +224,9 @@
 						flat: true,
 						map: map,
 						content: iconHTML});
-				var caption = '<p><img src="' + icon_path + '" style="float:left;"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
-						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
+		
+				var caption = '<p><img src="' + icon_path + '" style="float:left;"></p>' +
+						'<p>'+ intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
 				if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
@@ -236,19 +237,22 @@
 					
 					// consider that solarelev may need to be < -6 or so to be dark
 					if (illumination == 0 && elevation > 0 && solarelev < 0) {
-						caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
+						if (future) caption += '<p>' + satellite_name + ' will <em>potentially</em> be visible from the observer location at this time ';
+						else caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
 						caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
 					} else {
-						caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from the observer location at this time. (';
-						
+						var waswillbe;
+						if (future) {
+							caption += '<p>' + satellite_name + ' will probably <em>not</em> be visible from the observer location at this time. (';
+							waswillbe = 'will be';
+						} else {
+							caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from the observer location at this time. (';
+							waswillbe = 'was';
+						}
 						var reasons = [];
-						if (illumination != 0)
-							reasons.push('It was in the earth\'s shadow.');
-						if (elevation <= 0)
-							reasons.push('It was below the horizon.');
-						if (solarelev >= 0)
-							reasons.push('The sun was above the horizon.');
-						
+						if (illumination != 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
+						if (elevation <= 0) reasons.push('It ' + waswillbe + ' below the horizon.');
+						if (solarelev >= 0) reasons.push('The sun ' + waswillbe + ' above the horizon.');
 						caption += reasons.join(' ') + ')</p>';
 					}
 				}
@@ -357,23 +361,46 @@
 
 					// Adjust map extent to focus on ground track (and observer, if any)
 					map.fitBounds(traceExtent);
-					
+
 					// Create marker to represent Mention position.
 					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
+						
+						// If the user explicitly specified a timestamp, no reply marker is generated
+						// (because the reply time may be before or long after the specified time.)
+						// The presence of a reply marker indicates no explicit timestamp was given.
+						var explicit_timestamp = true;
+						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt'))
+							explicit_timestamp = false;
 						
 						// Set page title to mention satellite name and primary time
 						var timestamp = new Date(parseInt(q.value('mt')) * 1000);
 						document.title = "Where's That Sat: " + satelliteName + ' on ' + FormatTimestamp(timestamp);
 						
-						MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
+						var intro = '';
+						var future = false;
+						if (explicit_timestamp) {
+							intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
+							if (timestamp > Date.now()) {
+								intro += 'will be';
+								future = true;
+							} else intro += 'was';
+						} else {
+							intro = 'When you <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
+						}
+						
+						MarkPlace(map, q, 'ma', 'mh', 'ms', 'ml', 'mi', 'me', 'mz', 'mo',
 								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention',
-								'When you <a href="' + tweetlink + '">mentioned</a> it');				
+								intro, future);				
 								
 						// Create marker to represent Reply position, if specified.
-						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt')) {
-							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rt', 'rl', 'ri', 're', 'rz', 'ro',
+						if (!explicit_timestamp) {
+
+							var rtimestamp = new Date(parseInt(q.value('rt')) * 1000);
+							var rintro = 'When @WheresThatSat replied on ' + FormatTimestamp(rtimestamp) + ', ' + satelliteName + ' was';
+							
+							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rl', 'ri', 're', 'rz', 'ro',
 									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply',
-									'When @WheresThatSat replied');
+									rintro, false);
 						}
 					
 					}
