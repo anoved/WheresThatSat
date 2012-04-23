@@ -20,6 +20,7 @@ require 'yaml'
 # for url encoding
 require 'cgi'
 
+require 'chronic'
 require 'geocoder'
 
 def GoGoGTG(gtg_args)
@@ -193,13 +194,23 @@ def RespondToMentions(acc_available)
 				#	next
 				#end
 				
-				if (tweet[:text].match(/\#time(\d+)/i))
+				if (tweet[:text].match(/\#time "([^"]+)"/i))
 					# If the user specifies a specific time (which may be long past,
 					# or in the future), plot ground track around that time, and do
 					# not output a separate track point representing our reply time.
-					input_timestamp = $1.to_i
-					output_timestamp = -1
-					if $testmode then puts format "Explicit timestamp: %d", input_timestamp end
+					
+					# This will parse relative time terms in the host computer's zone...
+					# specify something like Chronic.parse($1, :now => Time) where Time
+					# is the current time in the user's time zone - perhaps something
+					# we can get from the tweet metadata?
+					# (yeah, ParseReplyTimestamp minus the .to_i part... maybe. 
+					#  Maybe, because it's not clear if "2 pm tomorrow" will be
+					#  converted to utc or not, so the result could be offset..)
+					time_result = Chronic.parse($1)
+					if (time_result != nil)
+						input_timestamp = time_result.to_i
+						output_timestamp = -1
+					end
 				end
 				
 				# By default, no location associated with input.
