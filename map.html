@@ -236,10 +236,10 @@
 					
 					// consider that solarelev may need to be < -6 or so to be dark
 					if (illumination == 0 && elevation > 0 && solarelev < 0) {
-						caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from your location at this time ';
+						caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
 						caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
 					} else {
-						caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from your location at this time. (';
+						caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from the observer location at this time. (';
 						
 						var reasons = [];
 						if (illumination != 0)
@@ -347,13 +347,15 @@
 								flat: true,
 								map: map});
 						
-						var obscaption = '<p><img src="images/user-location.png" /></p><p>Your location is ' + FormatLatLon(ll) + '.</p>';
-						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
+						var obscaption
+						if (q.exists('on')) obscaption = '<p>The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
+						else obscaption = '<p>The observer location is ' + FormatLatLon(ll) + '.</p>';
 						
+						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
 						AddHighlights(observerMarker, 'observer-marker', obsinfo);
 					}
 
-					// Adjust map extent to focus on ground track.
+					// Adjust map extent to focus on ground track (and observer, if any)
 					map.fitBounds(traceExtent);
 					
 					// Create marker to represent Mention position.
