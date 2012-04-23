@@ -86,20 +86,20 @@ def LoadSatelliteCatalog(catalog_path='config/catalog.yml')
 	$catalog = YAML.load_file(catalog_path)
 end
 
-# returns integer number of seconds since UNIX epoch
+# returns Time object
 # example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
 def ParseSearchTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[4].split(':')
-	return Time.utc(parts[3], parts[2], parts[1], hms[0], hms[1], hms[2], 0).to_i
+	return Time.utc(parts[3], parts[2], parts[1], hms[0], hms[1], hms[2], 0)
 end
 
-# returns integer number of seconds since UNIX epoch
+# returns Time object
 # example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
 def ParseReplyTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[3].split(':')
-	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0).to_i
+	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
 end
 
 # parameter acc_available: number of API calls available
@@ -131,7 +131,7 @@ def RespondToSearches(acc_available, search_quota=20)
 			
 			# time
 			input_timestamp = ParseSearchTimestamp(tweet[:created_at])
-			output_timestamp = Time.now.utc.to_i
+			output_timestamp = Time.now.utc
 			
 			# location
 			input_geo = false
@@ -151,7 +151,7 @@ def RespondToSearches(acc_available, search_quota=20)
 			# (No explicit time/location tags expected in non-mention search results)
 						
 			response = TheresThatSat satellite_name, $catalog[satellite_name],
-					from_user(tweet), tweet[:id], input_timestamp, output_timestamp,
+					from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
 					input_geo, input_lat, input_lon
 			
 			if $testmode
@@ -185,7 +185,7 @@ def RespondToMentions(acc_available)
 				
 				# By default, plot ground track from mention time to our reply time.
 				input_timestamp = ParseReplyTimestamp(tweet[:created_at])
-				output_timestamp = Time.now.utc.to_i
+				output_timestamp = Time.now.utc
 				
 				# Don't respond to this tweet if it's too old (overriding even
 				# our bot interval - we don't want to render any huge ranges
@@ -195,20 +195,11 @@ def RespondToMentions(acc_available)
 				#end
 				
 				if (tweet[:text].match(/\#time "([^"]+)"/i))
-					# If the user specifies a specific time (which may be long past,
-					# or in the future), plot ground track around that time, and do
-					# not output a separate track point representing our reply time.
-					
-					# This will parse relative time terms in the host computer's zone...
-					# specify something like Chronic.parse($1, :now => Time) where Time
-					# is the current time in the user's time zone - perhaps something
-					# we can get from the tweet metadata?
-					# (yeah, ParseReplyTimestamp minus the .to_i part... maybe. 
-					#  Maybe, because it's not clear if "2 pm tomorrow" will be
-					#  converted to utc or not, so the result could be offset..)
-					time_result = Chronic.parse($1)
+					# the :now parameter uses the [UTC] timestamp of the tweet as
+					# the basis for any relative time offsets, such as "hours from now"
+					time_result = Chronic.parse($1, :now => input_timestamp)
 					if (time_result != nil)
-						input_timestamp = time_result.to_i
+						input_timestamp = time_result
 						output_timestamp = -1
 					end
 				end
@@ -241,7 +232,7 @@ def RespondToMentions(acc_available)
 				end
 	
 				response = TheresThatSat satellite_name, $catalog[satellite_name],
-						from_user(tweet), tweet[:id], input_timestamp, output_timestamp,
+						from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
 						input_geo, input_lat, input_lon
 				
 				if ($testmode)
@@ -299,8 +290,8 @@ acc = RespondToMentions(ac_available)
 ac_consumed += acc
 ac_available -= acc
 
-acc = RespondToSearches(ac_available)
-ac_consumed += acc
-ac_available -= acc
+#acc = RespondToSearches(ac_available)
+#ac_consumed += acc
+#ac_available -= acc
 
 WriteAPICallCount(ac_consumed)
