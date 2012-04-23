@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		
 		<title>Where's That Sat Map</title>
-		
 		<style type="text/css">
 			html {
 				height: 100%;
@@ -53,18 +51,10 @@
 				top: 30px; /* header height */
 				bottom: 0; /* footer height */
 			}
-			
-			#leftpanel {
-				
-				left: 0;
-				width: 0; /* 200px */
-				height: 100%;
-			
-			}
-			
+						
 			#map_canvas {
 			
-				left: 0; /* leftpanel width */
+				left: 0;
 				right: 0; /* rightpanel width */
 				height: 100%;
 			
@@ -115,20 +105,10 @@
 			}
 			
 		</style>
-		
-		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false">
-		</script>
-				
-		<script src="http://platform.twitter.com/widgets.js" charset="utf-8">
-		</script>
-		
-		<script type="text/javascript" src="scripts/QueryString.js">
-		</script>
-
-		<script type="text/javascript" src="scripts/richmarker.js">
-		</script>
-
-		
+		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false"></script>
+		<script src="http://platform.twitter.com/widgets.js" charset="utf-8"></script>
+		<script type="text/javascript" src="scripts/QueryString.js"></script>
+		<script type="text/javascript" src="scripts/richmarker.js"></script>
 		<script type="text/javascript">
 			
 			function CoordinateParameterToLatLon(coordinates) {
@@ -253,8 +233,7 @@
 						anchor: RichMarkerPosition.TOP,
 						flat: true,
 						map: map,
-						content: iconHTML
-				});
+						content: iconHTML});
 				var caption = '<p><img src="' + icon_path + '" style="float:left;"></p><p>'+ intro + ' on ' + FormatTimestamp(timestamp) +
 						', ' + satellite_name + ' was at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
@@ -313,7 +292,6 @@
 				
 				// Page layout divs
 				var content = document.getElementById("content");
-				var leftpanel = document.getElementById("leftpanel");
 				var map_canvas = document.getElementById("map_canvas");
 				var rightpanel = document.getElementById("rightpanel");
 				var footer = document.getElementById("footer");
@@ -332,8 +310,7 @@
 						overviewMapControl: true,
 						overviewMapControlOptions: {
 							opened: false
-						}
-				});
+						}});
 				
 				q = new QueryString();
 				
@@ -387,8 +364,7 @@
 							strokeWeight: 8,
 							geodesic: true,
 							clickable: false,
-							map: map
-					});
+							map: map});
 					
 					var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 					var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
@@ -410,8 +386,7 @@
 								anchor: RichMarkerPosition.BOTTOM,
 								draggable: false,
 								flat: true,
-								map: map
-						});
+								map: map});
 						
 						var obscaption = '<p><img src="images/user-location.png" /></p><p>Your location is ' + FormatLatLon(ll) + '.</p>';
 						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
@@ -441,7 +416,11 @@
 					
 					// Create marker to represent Mention position.
 					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
-												
+						
+						// Set page title to mention satellite name and primary time
+						var timestamp = new Date(parseInt(q.value('mt')) * 1000);
+						document.title = "Where's That Sat: " + satelliteName + ' on ' + FormatTimestamp(timestamp);
+						
 						MarkPlace(map, q, 'ma', 'mh', 'ms', 'mt', 'ml', 'mi', 'me', 'mz', 'mo',
 								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention',
 								'When you <a href="' + tweetlink + '">mentioned</a> it');				
@@ -470,26 +449,15 @@
 				}
 			}
 		</script>
-		
 	</head>
 	<body onload="initialize()">
-		
 		<div id="header" class="row">
 		Where's That Sat?
 		</div>
-		
 		<div id="content" class="row">
-			
-			<!-- unused -->
-			<div id="leftpanel" class="col scrolly"></div>
-			
 			<div id="map_canvas" class="col"></div>
-						
 			<div id="rightpanel" class="col scrolly"></div>
-		
 		</div>
-		
 		<div id="footer" class="row"> </div>
-		
 	</body>
 </html>
