@@ -123,23 +123,22 @@
 		<script type="text/javascript" src="scripts/richmarker.js"></script>
 		<script type="text/javascript">
 			
-			function AddHighlights(marker, marker_content, panel) {
-												
-				// Highlight panel when mousing over map markers
-				google.maps.event.addListener(marker, 'mouseover', function() {
-						marker_content.style.borderColor = "blue";
-						panel.style.borderColor = "blue";});
-				google.maps.event.addListener(marker, 'mouseout', function() {
-						marker_content.style.borderColor = "transparent";
-						panel.style.borderColor = "gray";});
+			function SetupMarkerPanelHighlights(marker, marker_content, panel) {
 				
-				// Highlight map markers when mousing over panel
-				panel.addEventListener('mouseover', function() {
-						panel.style.borderColor = "blue";
-						marker_content.style.borderColor = "blue";});
-				panel.addEventListener('mouseout', function() {
-						panel.style.borderColor = "gray";
-						marker_content.style.borderColor = "transparent";});
+				var mouseover_function = function() {
+						marker_content.style.borderColor = "blue";
+						panel.style.backgroundColor = "#FFFFAA";};
+				var mouseout_function = function() {
+						marker_content.style.borderColor = "transparent";
+						panel.style.backgroundColor = "white";};
+						
+				// Marker mouseover/mouseout events
+				google.maps.event.addListener(marker, 'mouseover', mouseover_function);
+				google.maps.event.addListener(marker, 'mouseout', mouseout_function);
+				
+				// Panel mouseover/mouseout events
+				panel.addEventListener('mouseover', mouseover_function);
+				panel.addEventListener('mouseout', mouseout_function);
 			}
 			
 			function CoordinateParameterToLatLon(coordinates) {
@@ -189,18 +188,15 @@
 				return timestamp.toDateString() + ' at ' + timestamp.toTimeString();
 			}
 			
-			function FormatLatLon(latlon) {
-				var lat = latlon[0];
-				var lon = latlon[1];
+			function FormatLatLon(ll) {
 				var lat_hem = 'N';
 				var lon_hem = 'E';
-				if (lat < 0) lat_hem = 'S';
-				if (lon < 0) lon_hem = 'W';
-				return Math.abs(lat).toString() + lat_hem + ' ' +
-						Math.abs(lon).toString() + lon_hem;
+				if (ll[0] < 0) lat_hem = 'S';
+				if (ll[1] < 0) lon_hem = 'W';
+				return Math.abs(ll[0]).toString() + lat_hem + ' ' + Math.abs(ll[1]).toString() + lon_hem;
 			}
 			
-			function AddInfoToPanel(panel, caption, id) {
+			function CreateInfoPanel(panel, caption, id) {
 				var infodiv = document.createElement('div');
 				infodiv.className = 'locinfo';
 				infodiv.setAttribute('id', id + '-info');
@@ -274,8 +270,8 @@
 					}
 				}
 				
-				var infopanel = AddInfoToPanel(panel, caption, id);
-				AddHighlights(marker, icon_div, infopanel);
+				var infopanel = CreateInfoPanel(panel, caption, id);
+				SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 				
 				var infopanelmarker = document.getElementById(id + '-icon');
 				infopanelmarker.addEventListener('click', function() {map.panTo(point);});
@@ -353,7 +349,7 @@
 					var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
 					var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
 					
-					AddInfoToPanel(rightpanel, caption, 'trace');
+					CreateInfoPanel(rightpanel, caption, 'trace');
 				
 					// Create marker to represent Observer position.
 					if (q.exists('ol')) {
@@ -372,7 +368,7 @@
 						var obscaption = '<p><img id="observer-icon" class="info-icon" src="images/observer.png">';
 						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
 						else obscaption += 'The observer location is ' + FormatLatLon(ll) + '.</p>';
-						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
+						var obsinfo = CreateInfoPanel(rightpanel, obscaption, 'observer');
 						
 						var obsinfoicon = document.getElementById('observer-icon');
 						obsinfoicon.addEventListener('click', function() {map.panTo(point);});
@@ -427,13 +423,13 @@
 					// Prompt user to ask about this satellite again
 					{
 						var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
-						AddInfoToPanel(rightpanel, askcaption, 'ask');
+						CreateInfoPanel(rightpanel, askcaption, 'ask');
 					}
 					
 					// Display referrer link iff it's a t.co shortlink
 					if ((document.referrer != '') && (document.referrer.split('/')[2] == 't.co')) {
 						var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
-						AddInfoToPanel(rightpanel, refcaption, 'referrer');
+						CreateInfoPanel(rightpanel, refcaption, 'referrer');
 					}
 				
 				}
