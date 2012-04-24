@@ -114,7 +114,7 @@ function CreateInfoPanel(container, caption, id) {
 function SetupMarkerPanelHighlights(marker, marker_content, panel) {
 	
 	var mouseover_function = function() {
-			marker_content.style.borderColor = "blue";
+			marker_content.style.borderColor = "#1A5CBF";
 			panel.style.backgroundColor = "#FFFFAA";};
 	var mouseout_function = function() {
 			marker_content.style.borderColor = "transparent";
@@ -254,7 +254,7 @@ function initialize() {
 	
 	// Create the basemap.
 	var map = new google.maps.Map(map_canvas, {
-			backgroundColor: "#AAAADD",
+			backgroundColor: "#1A5CBF",
 			center: new google.maps.LatLng(0, 0),
 			zoom: 2,
 			mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -335,13 +335,13 @@ function initialize() {
 			if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt'))
 				no_response_marker = false;
 			
-			// Set page title to mention satellite name and time
-			var timestamp = new Date(parseInt(q.value('mt'), 10) * 1000);
-			document.title = "Where's That Sat: " + satelliteName + ' on ' + FormatTimestamp(timestamp);
+			// Set page title to mention satellite name
+			document.title = "Where's That Sat: " + satelliteName;
 			
 			// Assemble wording for description introduction.
 			// Three cases: specific future time, specific past time,
 			// or implicit past time (that of the mentioning tweet)
+			var timestamp = new Date(parseInt(q.value('mt'), 10) * 1000);
 			var intro = '';
 			var future = false;
 			if (no_response_marker) {
