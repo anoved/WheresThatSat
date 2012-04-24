@@ -455,20 +455,22 @@
 					// Create marker to represent Mention position.
 					if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 						
-						// If the user explicitly specified a timestamp, no reply marker is generated
-						// (because the reply time may be before or long after the specified time.)
-						// The presence of a reply marker indicates no explicit timestamp was given.
-						var explicit_timestamp = true;
+						// The absence of a response marker indicates that the
+						// mention marker represents an explicitly specified time
+						var no_response_marker = true;
 						if (q.exists('rl') && q.exists('ra') && q.exists('rh') && q.exists('rs') && q.exists('rt'))
-							explicit_timestamp = false;
+							no_response_marker = false;
 						
-						// Set page title to mention satellite name and primary time
+						// Set page title to mention satellite name and time
 						var timestamp = new Date(parseInt(q.value('mt')) * 1000);
 						document.title = "Where's That Sat: " + satelliteName + ' on ' + FormatTimestamp(timestamp);
 						
+						// Assemble wording for description introduction.
+						// Three cases: specific future time, specific past time,
+						// or implicit past time (that of the mentioning tweet)
 						var intro = '';
 						var future = false;
-						if (explicit_timestamp) {
+						if (no_response_marker) {
 							intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
 							if (timestamp > Date.now()) {
 								intro += 'will be';
@@ -478,12 +480,13 @@
 							intro = 'When you <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
 						}
 						
+						// Fling a bunch of parameters at the map and see what sticks!
 						MarkPlace(map, q, 'ma', 'mh', 'ms', 'ml', 'mi', 'me', 'mz', 'mo',
 								userName, satelliteName, 'images/a.png', rightpanel, 'mention',
 								intro, future);				
 								
 						// Create marker to represent Reply position, if specified.
-						if (!explicit_timestamp) {
+						if (!no_response_marker) {
 
 							var rtimestamp = new Date(parseInt(q.value('rt')) * 1000);
 							var rintro = 'When @WheresThatSat replied on ' + FormatTimestamp(rtimestamp) + ', ' + satelliteName + ' was';
