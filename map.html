@@ -337,6 +337,37 @@
 			}
 			
 			//
+			// Parameters:
+			//   map (basemap for plot)
+			//   coordinateParameters (array of strings of format "latitude,longitude")
+			//
+			// Results:
+			//   creates ground track polyline on map
+			//
+			// Returns:
+			//   LatLngBounds object representing extent of ground track
+			// 
+			function PlotGroundTrack(map, coordinateParameters) {
+				var coordinateList = [];
+				var extent = new google.maps.LatLngBounds();
+				for (var i = 0; i < coordinateParameters.length; i++) {
+					var coordinates = CoordinateParameterToLatLon(coordinateParameters[i]);
+					var point = new google.maps.LatLng(coordinates[0], coordinates[1]);
+					extent.extend(point);
+					coordinateList.push(point);
+				}
+				var groundTrack = new google.maps.Polyline({
+					path: coordinateList,
+					strokeOpacity: 0.6,
+					strokeWeight: 8,
+					strokeColor: "#008800",
+					geodesic: true,
+					clickable: false,
+					map: map});
+				return extent;
+			}
+			
+			//
 			// Results:
 			//   creates base map and, if required parameters are present,
 			//   populates it with sat path, location markers, and other info
@@ -365,53 +396,33 @@
 				
 				q = new QueryString();
 				
-				var satelliteName;
-				if (q.exists('sn')) satelliteName = q.value('sn');
-				else satelliteName = 'the satellite';
+				// Don't bother proceeding if the basic info isn't available
+				if (!q.exists('sn') || !q.exists('un') || !q.exists('ut'))
+					return;
 				
-				var userName;
-				if (q.exists('un')) userName = q.value('un');
-				else userName = 'you';
+				var satelliteName = q.value('sn');
+				var userName = q.value('un');
+				var tweetID = q.value('ut');
 				
-				var tweetID;
-				if (q.exists('ut')) tweetID = q.value('ut');
-				else tweetID = 0;
-				
-				// Create polyline to represent ground track.
+				// First feature: ground track
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
-	
+					
+					// Display the sidebar
 					rightpanel.style.width = "250px";
 					map_canvas.style.right = "250px";
-										
+					
+					// Get the endpoints of the ground track	
 					var traceStartTime = new Date(parseInt(q.value('t1')) * 1000);
 					var traceEndTime   = new Date(parseInt(q.value('t2')) * 1000);
 					
-					// Assemble list of ground track coordinates from ll parameter strings.
-					var traceParameters = q.values('ll');
-					var traceCoordinates = [];
-					var traceExtent = new google.maps.LatLngBounds();
-					for (var i = 0; i < traceParameters.length; i++) {
-						var ll = CoordinateParameterToLatLon(traceParameters[i]);
-						var point = new google.maps.LatLng(ll[0], ll[1]);
-						traceExtent.extend(point);
-						traceCoordinates.push(point);
-					}
-					
-					// Create the ground track and place it on the map
-					var trace = new google.maps.Polyline({
-							path: traceCoordinates,
-							strokeOpacity: 0.6,
-							strokeColor: "#008800",
-							strokeWeight: 8,
-							geodesic: true,
-							clickable: false,
-							map: map});
-					
+					// Plot the ground track on the map
+					var traceExtent = PlotGroundTrack(map, q.values('ll'));
+
+					// Assemble and display ground track description
 					var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 					var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
 					var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
-					
-					CreateInfoPanel(rightpanel, caption, 'trace');
+					CreateInfoPanel(rightpanel, caption, 'trace-info');
 				
 					// Create marker to represent Observer position.
 					if (q.exists('ol')) {
