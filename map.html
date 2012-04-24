@@ -11,88 +11,65 @@
 				margin: 0;
 				padding: 0;
 			}
-			
 			.row, .col {
 				overflow: hidden;
 				position: absolute;
 			}
-			
 			.row {
 				left: 0;
 				right: 0;
 			}
-			
 			.col {
 				top: 0;
 				bottom: 0;
 			}
-			
 			.scrollx {
 				overflow-x: auto;
 			}
-			
 			.scrolly {
 				overflow-y: auto;
 			}
-			
 			.scrollx, .scrolly {
 				-webkit-overflow-scrolling: touch;
 			}
-			
 			#header {
-			
 				top: 0;
 				height: 30px;
-				
 			}
-			
 			#content {
-			
 				top: 30px; /* header height */
 				bottom: 0; /* footer height */
 			}
-						
 			#map_canvas {
-			
 				left: 0;
-				right: 0; /* rightpanel width */
+				right: 0; /* rightpanel width; adjusted by initialize() */
 				height: 100%;
-			
 			}
-			
 			#rightpanel {
-				
 				right: 0;
-				width: 0; /* 200px */
+				width: 0; /* adjusted by initialize() */
 				height: 100%;
-				
 			}
-			
 			#footer {
-			
 				bottom: 0;
 				height: 0;
-				
 			}
 			
-			/* Have a site-wide stylesheet for shared styles,
-			   and a separate map-page-specific stylesheet for this layout. */
-			
-			div.satmarker {
-				border: 2px solid transparent;
-			}
-			
-			#observer-marker {
-				border: 1px solid black;
-			}
-			
+			/* background colors and aesthetic styles; match basemap background */		
 			#header {
 				background-color: #AAAADD;
 			}
 			#rightpanel {
 				background-color: #AAAADD;
 			}
-			.locinfo {
+			
+			/* sat location map markers; default transparent border for highlighting */
+			div.satmarker {
+				border: 2px solid transparent;
+			}
+
+			/* info panels in sidebar; default white background for highlighting */
+			.infopanel {
 				clear: both;
 				margin: 3px;
 				padding: 6px;
@@ -101,17 +78,16 @@
 				font-family: Verdana, sans-serif;
 				font-size: small;
 			}
-			
-			.locinfo p {
+			.infopanel p {
 				margin: 0px;
 				margin-top: 6px;
 			}
-			
-			.locinfo p:first-child {
+			.infopanel p:first-child {
 				margin-top: 0;
 			}
 			
-			img.info-icon {
+			/* icons in info panels */
+			img.infoicon {
 				float: right;
 				padding: 2px;
 			}
@@ -219,7 +195,7 @@
 			//
 			function CreateInfoPanel(container, caption, id) {
 				var infodiv = document.createElement('div');
-				infodiv.className = 'locinfo';
+				infodiv.className = 'infopanel';
 				infodiv.setAttribute('id', id + '-info');
 				infodiv.innerHTML = caption;
 				container.appendChild(infodiv);
@@ -294,7 +270,7 @@
 						map: map,
 						content: icon_div});
 		
-				var caption = '<p><img id="' + id + '-icon" class="info-icon" src="' + icon_path + '">' +
+				var caption = '<p><img id="' + id + '-icon" class="infoicon" src="' + icon_path + '">' +
 						intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
@@ -327,12 +303,11 @@
 					}
 				}
 				
-				// put info 
 				var infopanel = CreateInfoPanel(container, caption, id);
 				SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 				
-				var infopanelmarker = document.getElementById(id + '-icon');
-				infopanelmarker.addEventListener('click', function() {map.panTo(point);});
+				var infoicon = document.getElementById(id + '-icon');
+				infoicon.addEventListener('click', function() {map.panTo(point);});
 
 			}
 			
@@ -422,7 +397,7 @@
 					var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 					var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
 					var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
-					CreateInfoPanel(rightpanel, caption, 'trace-info');
+					CreateInfoPanel(rightpanel, caption, 'trace');
 				
 					// Optional feature: observer position.
 					if (q.exists('ol')) {
@@ -440,7 +415,7 @@
 								map: map});
 						
 						// Assemble and display the observer description
-						var obscaption = '<p><img id="observer-icon" class="info-icon" src="images/observer.png">';
+						var obscaption = '<p><img id="observer-icon" class="infoicon" src="images/observer.png">';
 						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ol) + ' (' + q.value('on') + ').</p>';
 						else obscaption += 'The observer location is ' + FormatLatLon(ol) + '.</p>';
 						var obsinfo = CreateInfoPanel(rightpanel, obscaption, 'observer');
