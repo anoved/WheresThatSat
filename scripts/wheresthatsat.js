@@ -174,14 +174,14 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 			', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 	
 	if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
-		var illumination = parseInt(q.value(illumination_arg));
+		var illumination = parseInt(q.value(illumination_arg), 10);
 		var elevation = parseFloat(q.value(elevation_arg));
 		var azimuth = parseFloat(q.value(azimuth_arg));
 		var solarelev = parseFloat(q.value(solarelev_arg));
 		
 		// technically, it may still be light out if solarelev < 0;
 		// sunset/twilight lasts until solarelev < -6 or so
-		if (illumination == 0 && elevation > 0 && solarelev < 0) {
+		if (illumination === 0 && elevation > 0 && solarelev < 0) {
 			if (future) caption += '<p>' + satellite_name + ' will <em>potentially</em> be visible from the observer location at this time ';
 			else caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
 			caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
@@ -195,7 +195,7 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 				waswillbe = 'was';
 			}
 			var reasons = [];
-			if (illumination != 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
+			if (illumination !== 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
 			if (elevation <= 0) reasons.push('It ' + waswillbe + ' below the horizon.');
 			if (solarelev >= 0) reasons.push('The sun ' + waswillbe + ' above the horizon.');
 			caption += reasons.join(' ') + ')</p>';
@@ -286,8 +286,8 @@ function initialize() {
 		map_canvas.style.right = "250px";
 		
 		// Get the endpoints of the ground track	
-		var traceStartTime = new Date(parseInt(q.value('t1')) * 1000);
-		var traceEndTime   = new Date(parseInt(q.value('t2')) * 1000);
+		var traceStartTime = new Date(parseInt(q.value('t1'), 10) * 1000);
+		var traceEndTime   = new Date(parseInt(q.value('t2'), 10) * 1000);
 		
 		// Plot the ground track on the map
 		var traceExtent = PlotGroundTrack(map, q.values('ll'));
@@ -336,7 +336,7 @@ function initialize() {
 				no_response_marker = false;
 			
 			// Set page title to mention satellite name and time
-			var timestamp = new Date(parseInt(q.value('mt')) * 1000);
+			var timestamp = new Date(parseInt(q.value('mt'), 10) * 1000);
 			document.title = "Where's That Sat: " + satelliteName + ' on ' + FormatTimestamp(timestamp);
 			
 			// Assemble wording for description introduction.
@@ -362,7 +362,7 @@ function initialize() {
 			// Create marker to represent Reply position, if specified.
 			if (!no_response_marker) {
 
-				var rtimestamp = new Date(parseInt(q.value('rt')) * 1000);
+				var rtimestamp = new Date(parseInt(q.value('rt'), 10) * 1000);
 				var rintro = 'When @WheresThatSat replied on ' + FormatTimestamp(rtimestamp) + ', ' + satelliteName + ' was';
 				
 				MarkPlace(map, q, 'ra', 'rh', 'rs', 'rl', 'ri', 're', 'rz', 'ro',
@@ -373,13 +373,11 @@ function initialize() {
 		}
 		
 		// Prompt user to ask about this satellite again
-		{
-			var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
-			CreateInfoPanel(rightpanel, askcaption, 'ask');
-		}
+		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
+		CreateInfoPanel(rightpanel, askcaption, 'ask');
 		
 		// Display referrer link iff it's a t.co shortlink
-		if ((document.referrer != '') && (document.referrer.split('/')[2] == 't.co')) {
+		if ((document.referrer !== '') && (document.referrer.split('/')[2] === 't.co')) {
 			var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
 			CreateInfoPanel(rightpanel, refcaption, 'referrer');
 		}
