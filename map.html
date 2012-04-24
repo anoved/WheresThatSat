@@ -123,32 +123,15 @@
 		<script type="text/javascript" src="scripts/richmarker.js"></script>
 		<script type="text/javascript">
 			
-			function SetupMarkerPanelHighlights(marker, marker_content, panel) {
-				
-				var mouseover_function = function() {
-						marker_content.style.borderColor = "blue";
-						panel.style.backgroundColor = "#FFFFAA";};
-				var mouseout_function = function() {
-						marker_content.style.borderColor = "transparent";
-						panel.style.backgroundColor = "white";};
-						
-				// Marker mouseover/mouseout events
-				google.maps.event.addListener(marker, 'mouseover', mouseover_function);
-				google.maps.event.addListener(marker, 'mouseout', mouseout_function);
-				
-				// Panel mouseover/mouseout events
-				panel.addEventListener('mouseover', mouseover_function);
-				panel.addEventListener('mouseout', mouseout_function);
-			}
-			
-			function CoordinateParameterToLatLon(coordinates) {
-				var latlon_strings = coordinates.split(',');
-				return latlon_strings.map(function(x) {return parseFloat(x);});
-			}
-			
-			// heading must be in range [0-360]
+			//
+			// Parameters:
+			//   heading (degrees in range 0 <= heading <= 360)
+			//
+			// Returns:
+			//   string representation of heading as compass direction
+			//   per https://en.wikipedia.org/wiki/Boxing_the_compass
+			//
 			function HeadingToCompassDirection(heading) {
-				// per https://en.wikipedia.org/wiki/Boxing_the_compass
 				if (heading >= 0 && heading < 5.62) return "north";
 				else if (heading >= 5.62 && heading < 16.87) return "north by east";
 				else if (heading >= 16.87 && heading < 28.12) return "north-northeast";
@@ -184,10 +167,24 @@
 				else if (heading >= 354.37 && heading <= 360) return "north";
 			}
 			
+			//
+			// Parameters:
+			//   timestamp (Date object)
+			//
+			// Returns:
+			//   string representation of timestamp
+			//
 			function FormatTimestamp(timestamp) {
 				return timestamp.toDateString() + ' at ' + timestamp.toTimeString();
 			}
 			
+			//
+			// Parameters:
+			//   ll (array of floats; [0] is latitude, [1] is longitude)
+			//
+			// Returns:
+			//   string representation of ll
+			//
 			function FormatLatLon(ll) {
 				var lat_hem = 'N';
 				var lon_hem = 'E';
@@ -195,19 +192,78 @@
 				if (ll[1] < 0) lon_hem = 'W';
 				return Math.abs(ll[0]).toString() + lat_hem + ' ' + Math.abs(ll[1]).toString() + lon_hem;
 			}
+
+			//
+			// Parameters:
+			//   coordinates (string of format "latitude,longitude")
+			//
+			// Returns:
+			//   array of floats; [0] is latitude, [1] is longitude
+			//
+			function CoordinateParameterToLatLon(coordinates) {
+				var latlon_strings = coordinates.split(',');
+				return latlon_strings.map(function(x) {return parseFloat(x);});
+			}
 			
-			function CreateInfoPanel(panel, caption, id) {
+			//
+			// Parameters:
+			//   container (parent element for panel)
+			//   caption (HTML content for panel)
+			//   id (id string for panel)
+			//
+			// Results:
+			//   creates div id as child of container with caption as content
+			//
+			// Returns:
+			//   panel div element
+			//
+			function CreateInfoPanel(container, caption, id) {
 				var infodiv = document.createElement('div');
 				infodiv.className = 'locinfo';
 				infodiv.setAttribute('id', id + '-info');
 				infodiv.innerHTML = caption;
-				panel.appendChild(infodiv);
+				container.appendChild(infodiv);
 				return infodiv;
 			}
 			
+			//
+			// Parameters:
+			//   marker (map marker)
+			//   marker_content (map marker element to highlight)
+			//   panel (info element to highlight)
+			//
+			// Results:
+			//   adds mouseover/mouseout event listeners to marker and panel
+			//   that highlight marker_div and panel
+			//
+			function SetupMarkerPanelHighlights(marker, marker_content, panel) {
+				
+				var mouseover_function = function() {
+						marker_content.style.borderColor = "blue";
+						panel.style.backgroundColor = "#FFFFAA";};
+				var mouseout_function = function() {
+						marker_content.style.borderColor = "transparent";
+						panel.style.backgroundColor = "white";};
+						
+				// Marker mouseover/mouseout events
+				google.maps.event.addListener(marker, 'mouseover', mouseover_function);
+				google.maps.event.addListener(marker, 'mouseout', mouseout_function);
+				
+				// Panel mouseover/mouseout events
+				panel.addEventListener('mouseover', mouseover_function);
+				panel.addEventListener('mouseout', mouseout_function);
+			}
+			
+			//
+			// Parameters:
+			//   too many
+			//
+			// Results:
+			//   creates sat location map marker and corresponding info panel
+			//
 			function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 					coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-					solarelev_arg, user_name, satellite_name, icon_path, panel, id, intro, future) {
+					solarelev_arg, user_name, satellite_name, icon_path, container, id, intro, future) {
 					
 				var altitude = parseFloat(q.value(altitude_arg));
 				var heading = parseFloat(q.value(heading_arg));
@@ -248,7 +304,8 @@
 					var azimuth = parseFloat(q.value(azimuth_arg));
 					var solarelev = parseFloat(q.value(solarelev_arg));
 					
-					// consider that solarelev may need to be < -6 or so to be dark
+					// technically, it may still be light out if solarelev < 0;
+					// sunset/twilight lasts until solarelev < -6 or so
 					if (illumination == 0 && elevation > 0 && solarelev < 0) {
 						if (future) caption += '<p>' + satellite_name + ' will <em>potentially</em> be visible from the observer location at this time ';
 						else caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
@@ -270,20 +327,25 @@
 					}
 				}
 				
-				var infopanel = CreateInfoPanel(panel, caption, id);
+				// put info 
+				var infopanel = CreateInfoPanel(container, caption, id);
 				SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 				
 				var infopanelmarker = document.getElementById(id + '-icon');
 				infopanelmarker.addEventListener('click', function() {map.panTo(point);});
 
 			}
-						
+			
+			//
+			// Results:
+			//   creates base map and, if required parameters are present,
+			//   populates it with sat path, location markers, and other info
+			//		
 			function initialize() {
 				
 				// Page layout divs
 				var map_canvas = document.getElementById("map_canvas");
 				var rightpanel = document.getElementById("rightpanel");
-				var footer = document.getElementById("footer");
 				
 				// Create the basemap.
 				var map = new google.maps.Map(map_canvas, {
