@@ -78,8 +78,12 @@
 			/* Have a site-wide stylesheet for shared styles,
 			   and a separate map-page-specific stylesheet for this layout. */
 			
-			div.satmarker, #observer-marker {
+			div.satmarker {
 				border: 2px solid transparent;
+			}
+			
+			#observer-marker {
+				border: 1px solid black;
 			}
 			
 			#header {
@@ -105,6 +109,11 @@
 			
 			.locinfo p:first-child {
 				margin-top: 0;
+			}
+			
+			img.info-icon {
+				float: left;
+				padding: 3px;
 			}
 			
 		</style>
@@ -212,7 +221,9 @@
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
 				var speed = parseFloat(q.value(speed_arg));
-				var iconHTML = '<div id="' + id + '-marker" class="satmarker" style="-webkit-transform: rotate(' + heading + 'deg); -webkit-transform-origin: 50% 0%;"><img src="' + icon_path + '"></div>';
+				var iconHTML = '<div id="' + id + '-marker" class="satmarker" ><img src="' + icon_path +
+						'" width="36" height="36" style="-webkit-transform: rotate(' +
+						heading + 'deg); -webkit-transform-origin: 50% 50%;"></div>';
 								//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
 				var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
 				var point = new google.maps.LatLng(ll[0], ll[1]);
@@ -220,13 +231,13 @@
 						position: point,
 						clickable: false,
 						draggable: false,
-						anchor: RichMarkerPosition.TOP,
+						anchor: RichMarkerPosition.MIDDLE,
 						flat: true,
 						map: map,
 						content: iconHTML});
 		
-				var caption = '<p><img src="' + icon_path + '" style="float:left;"></p>' +
-						'<p>'+ intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
+				var caption = '<p><a href="#"><img id="' + id + '-icon" class="info-icon" src="' + icon_path + '"></a>' +
+						intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
 				if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
@@ -258,8 +269,11 @@
 				}
 				
 				var infopanel = AddInfoToPanel(panel, caption, id);
-				
 				AddHighlights(marker, id + '-marker', infopanel);
+				
+				var infopanelmarker = document.getElementById(id + '-icon');
+				infopanelmarker.addEventListener('click', function() {map.panTo(point);});
+
 			}
 						
 			function initialize() {
@@ -340,23 +354,22 @@
 						var ll = CoordinateParameterToLatLon(q.value('ol'));
 						var point = new google.maps.LatLng(ll[0], ll[1]);
 						traceExtent.extend(point);
-						// <img src="https://api.twitter.com/1/users/profile_image?screen_name=' + userName + '&size=mini" style="left:12px; top:8px;position:absolute;">
-						var observerMarker = new RichMarker({
+						
+						var observerMarker = new google.maps.Marker({
 								position: point,
 								animation: google.maps.Animation.DROP,
 								title: userName,
-								content: '<div id="observer-marker"><img src="images/user-location.png"></div>',
-								anchor: RichMarkerPosition.BOTTOM,
-								draggable: false,
-								flat: true,
+								icon: 'images/observer.png',
+								clickable: false,
 								map: map});
 						
-						var obscaption
-						if (q.exists('on')) obscaption = '<p>The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
-						else obscaption = '<p>The observer location is ' + FormatLatLon(ll) + '.</p>';
-						
+						var obscaption = '<p><a href="#"><img id="observer-icon" class="info-icon" src="images/observer.png"></a>';
+						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
+						else obscaption += 'The observer location is ' + FormatLatLon(ll) + '.</p>';
 						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
-						AddHighlights(observerMarker, 'observer-marker', obsinfo);
+						
+						var obsinfoicon = document.getElementById('observer-icon');
+						obsinfoicon.addEventListener('click', function() {map.panTo(point);});
 					}
 
 					// Adjust map extent to focus on ground track (and observer, if any)
