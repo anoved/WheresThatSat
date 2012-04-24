@@ -404,7 +404,7 @@
 				var userName = q.value('un');
 				var tweetID = q.value('ut');
 				
-				// First feature: ground track
+				// Fundamental feature: ground track
 				if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
 					
 					// Display the sidebar
@@ -424,12 +424,13 @@
 					var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
 					CreateInfoPanel(rightpanel, caption, 'trace-info');
 				
-					// Create marker to represent Observer position.
+					// Optional feature: observer position.
 					if (q.exists('ol')) {
-						var ll = CoordinateParameterToLatLon(q.value('ol'));
-						var point = new google.maps.LatLng(ll[0], ll[1]);
+					
+						// Plot the observer marker on the map
+						var ol = CoordinateParameterToLatLon(q.value('ol'));
+						var point = new google.maps.LatLng(ol[0], ol[1]);
 						traceExtent.extend(point);
-						
 						var observerMarker = new google.maps.Marker({
 								position: point,
 								animation: google.maps.Animation.DROP,
@@ -438,16 +439,17 @@
 								clickable: false,
 								map: map});
 						
+						// Assemble and display the observer description
 						var obscaption = '<p><img id="observer-icon" class="info-icon" src="images/observer.png">';
-						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
-						else obscaption += 'The observer location is ' + FormatLatLon(ll) + '.</p>';
+						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ol) + ' (' + q.value('on') + ').</p>';
+						else obscaption += 'The observer location is ' + FormatLatLon(ol) + '.</p>';
 						var obsinfo = CreateInfoPanel(rightpanel, obscaption, 'observer');
 						
+						// Center map on observer marker if the description icon is clicked
 						var obsinfoicon = document.getElementById('observer-icon');
 						obsinfoicon.addEventListener('click', function() {map.panTo(point);});
 					}
 
-					// Adjust map extent to focus on ground track (and observer, if any)
 					map.fitBounds(traceExtent);
 
 					// Create marker to represent Mention position.
