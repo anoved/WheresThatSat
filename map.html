@@ -34,10 +34,10 @@
 			}
 			#header {
 				top: 0;
-				height: 30px;
+				height: 64px;
 			}
 			#content {
-				top: 30px; /* header height */
+				top: 64px; /* header height */
 				bottom: 0; /* footer height */
 			}
 			#map_canvas {
@@ -55,14 +55,30 @@
 				height: 0;
 			}
 			
-			/* background colors and aesthetic styles; match basemap background */		
-			#header {
-				background-color: #AAAADD;
+			/* Fashionable styles */
+			body {
+				background-color: #1A5CBF;
+				font-family: Verdana, sans-serif;
 			}
-			#rightpanel {
-				background-color: #AAAADD;
+			#header {
+				background-image: url('images/gradient.png');
+				background-repeat: repeat-x;
+			}
+			#header h1 {
+				margin: 0;
+				padding: 0;
+				position: absolute;
+				left: 140px;
+				top: 10px;
+				color: white;
+			}
+			#header .logo {
+				position: absolute;
+				top: 0;
+				left: 0;
 			}
 			
+						
 			/* sat location map markers; default transparent border for highlighting */
 			div.satmarker {
 				border: 2px solid transparent;
@@ -75,7 +91,6 @@
 				padding: 6px;
 				border: solid 2px gray;
 				background-color: white;
-				font-family: Verdana, sans-serif;
 				font-size: small;
 			}
 			.infopanel p {
@@ -101,7 +116,7 @@
 	</head>
 	<body onload="initialize()">
 		<div id="header" class="row">
-		Where's That Sat?
+		<img src="images/wheresthatsat.png" class="logo"><h1>Where's That Sat?</h1>
 		</div>
 		<div id="content" class="row">
 			<div id="map_canvas" class="col"></div>
