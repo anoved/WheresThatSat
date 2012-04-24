@@ -112,36 +112,32 @@
 			}
 			
 			img.info-icon {
-				float: left;
-				padding: 3px;
+				float: right;
+				padding: 2px;
 			}
 			
 		</style>
 		<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyCZoi0fBwcBhvhe_UdzI0q8zBNKv6yoQ0U&sensor=false"></script>
-		<script src="http://platform.twitter.com/widgets.js" charset="utf-8"></script>
+		<script type="text/javascript" src="http://platform.twitter.com/widgets.js" charset="utf-8"></script>
 		<script type="text/javascript" src="scripts/QueryString.js"></script>
 		<script type="text/javascript" src="scripts/richmarker.js"></script>
 		<script type="text/javascript">
 			
-			function AddHighlights(marker, marker_id, panel) {
+			function AddHighlights(marker, marker_content, panel) {
 												
 				// Highlight panel when mousing over map markers
 				google.maps.event.addListener(marker, 'mouseover', function() {
-						var marker_content = document.getElementById(marker_id);
 						marker_content.style.borderColor = "blue";
 						panel.style.borderColor = "blue";});
 				google.maps.event.addListener(marker, 'mouseout', function() {
-						var marker_content = document.getElementById(marker_id);
 						marker_content.style.borderColor = "transparent";
 						panel.style.borderColor = "gray";});
 				
 				// Highlight map markers when mousing over panel
 				panel.addEventListener('mouseover', function() {
-						var marker_content = document.getElementById(marker_id);
 						panel.style.borderColor = "blue";
 						marker_content.style.borderColor = "blue";});
 				panel.addEventListener('mouseout', function() {
-						var marker_content = document.getElementById(marker_id);
 						panel.style.borderColor = "gray";
 						marker_content.style.borderColor = "transparent";});
 			}
@@ -221,10 +217,20 @@
 				var heading = parseFloat(q.value(heading_arg));
 				var direction = HeadingToCompassDirection(heading);
 				var speed = parseFloat(q.value(speed_arg));
-				var iconHTML = '<div id="' + id + '-marker" class="satmarker" ><img src="' + icon_path +
-						'" width="36" height="36" style="-webkit-transform: rotate(' +
-						heading + 'deg); -webkit-transform-origin: 50% 50%;"></div>';
-								//-moz-transform: rotate(360deg); -o-transform: rotate(360deg);-ms-transform: rotate(360deg);
+
+				var icon_div = document.createElement('div');
+				icon_div.setAttribute('id', id + '-marker');
+				icon_div.setAttribute('class', 'satmarker');
+				// transform-origin: 50% 50% (MIDDLE); should be default
+				icon_div.setAttribute('style',
+						'-webkit-transform:rotate(' + heading + 'deg);' +
+						'-moz-transform:rotate(' + heading + 'deg);' +
+						'-o-transform:rotate(' + heading + 'deg);' +
+						'-ms-transform:rotate(' + heading + 'deg);');
+				var icon_img = document.createElement('img');
+				icon_img.setAttribute('src', icon_path);
+				icon_div.appendChild(icon_img);
+								
 				var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
 				var point = new google.maps.LatLng(ll[0], ll[1]);
 				var marker = new RichMarker({
@@ -234,9 +240,9 @@
 						anchor: RichMarkerPosition.MIDDLE,
 						flat: true,
 						map: map,
-						content: iconHTML});
+						content: icon_div});
 		
-				var caption = '<p><a href="#"><img id="' + id + '-icon" class="info-icon" src="' + icon_path + '"></a>' +
+				var caption = '<p><img id="' + id + '-icon" class="info-icon" src="' + icon_path + '">' +
 						intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 						', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 				
@@ -269,7 +275,7 @@
 				}
 				
 				var infopanel = AddInfoToPanel(panel, caption, id);
-				AddHighlights(marker, id + '-marker', infopanel);
+				AddHighlights(marker, icon_div, infopanel);
 				
 				var infopanelmarker = document.getElementById(id + '-icon');
 				infopanelmarker.addEventListener('click', function() {map.panTo(point);});
@@ -363,7 +369,7 @@
 								clickable: false,
 								map: map});
 						
-						var obscaption = '<p><a href="#"><img id="observer-icon" class="info-icon" src="images/observer.png"></a>';
+						var obscaption = '<p><img id="observer-icon" class="info-icon" src="images/observer.png">';
 						if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ll) + ' (' + q.value('on') + ').</p>';
 						else obscaption += 'The observer location is ' + FormatLatLon(ll) + '.</p>';
 						var obsinfo = AddInfoToPanel(rightpanel, obscaption, 'observer');
@@ -402,7 +408,7 @@
 						}
 						
 						MarkPlace(map, q, 'ma', 'mh', 'ms', 'ml', 'mi', 'me', 'mz', 'mo',
-								userName, satelliteName, 'images/green-droplet.png', rightpanel, 'mention',
+								userName, satelliteName, 'images/a.png', rightpanel, 'mention',
 								intro, future);				
 								
 						// Create marker to represent Reply position, if specified.
@@ -412,7 +418,7 @@
 							var rintro = 'When @WheresThatSat replied on ' + FormatTimestamp(rtimestamp) + ', ' + satelliteName + ' was';
 							
 							MarkPlace(map, q, 'ra', 'rh', 'rs', 'rl', 'ri', 're', 'rz', 'ro',
-									userName, satelliteName, 'images/orange-droplet.png', rightpanel, 'reply',
+									userName, satelliteName, 'images/b.png', rightpanel, 'reply',
 									rintro, false);
 						}
 					
@@ -420,7 +426,7 @@
 					
 					// Prompt user to ask about this satellite again
 					{
-						var askcaption = '<p><img src="images/tweet-reply.png" /> <a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a></p>';
+						var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
 						AddInfoToPanel(rightpanel, askcaption, 'ask');
 					}
 					
