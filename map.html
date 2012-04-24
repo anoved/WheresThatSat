@@ -68,14 +68,31 @@
 				margin: 0;
 				padding: 0;
 				position: absolute;
-				left: 140px;
-				top: 10px;
+				left: 16px;
+				top: 16px;
+				text-height: 32px;
 				color: white;
+				font-family: Helvetica, Verdana, sans-serif;
+				font-style: italic;
+			}
+			#header h1 a {
+				color: white;
+				text-decoration: none;
+			}
+			#header h1 a:hover {
+				text-decoration: underline;
 			}
 			#header .logo {
 				position: absolute;
 				top: 0;
-				left: 0;
+				right: 0;
+			}
+			#header p#follow {
+				padding: 0;
+				margin: 0;
+				top: 22px;
+				right: 250px;
+				position: absolute;
 			}
 						
 			/* sat location map markers; default transparent border for highlighting */
@@ -115,7 +132,9 @@
 	</head>
 	<body onload="initialize()">
 		<div id="header" class="row">
-		<img src="images/wheresthatsat.png" class="logo"><h1>Where's That Sat?</h1>
+		<h1><a href="index.html">Where&rsquo;s That Sat?</a></h1>
+		<p id="follow"><a href="https://twitter.com/WheresThatSat" class="twitter-follow-button" data-show-count="false">Follow @WheresThatSat</a></p>
+		<img src="images/wheresthatsat.png" class="logo" alt="WheresThatSat Site Logo" />
 		</div>
 		<div id="content" class="row">
 			<div id="map_canvas" class="col"></div>
