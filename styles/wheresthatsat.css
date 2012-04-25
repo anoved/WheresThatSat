@@ -18,6 +18,7 @@ a {
 
 h1, h2, h3, h4 {
 	color: #1A5CBF;
+	margin-top: 0;
 }
 
 #header, #content {
@@ -77,3 +78,4 @@ p.logo {
 	float: right;
 	margin: 0;
 }
+
