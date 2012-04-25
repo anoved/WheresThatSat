@@ -242,6 +242,27 @@ function PlotGroundTrack(map, coordinateParameters) {
 }
 
 //
+// Parameters:
+//   map (basemap for logo)
+//
+// Results:
+//   displays WheresThatSat logo as a "control" on the map
+//
+// Returns:
+//   div containing logo
+//
+function CreateLogoControl(map) {
+	var logoDiv = document.createElement('div');
+	logoDiv.setAttribute('id', 'logo');
+	var logoImg = document.createElement('img');
+	logoImg.setAttribute('src', 'images/wheresthatsat.png');
+	logoImg.setAttribute('alt', 'WheresThatSat Logo');
+	logoDiv.appendChild(logoImg);
+	map.controls[google.maps.ControlPosition.RIGHT_TOP].push(logoDiv);
+	return logoDiv;
+}
+
+//
 // Results:
 //   creates base map and, if required parameters are present,
 //   populates it with sat path, location markers, and other info
@@ -252,9 +273,9 @@ function initialize() {
 	var map_canvas = document.getElementById("map_canvas");
 	var rightpanel = document.getElementById("rightpanel");
 	
-	// Create the basemap.
+	// Create the basemap. #1A5CBF
 	var map = new google.maps.Map(map_canvas, {
-			backgroundColor: "#1A5CBF",
+			backgroundColor: "white",
 			center: new google.maps.LatLng(0, 0),
 			zoom: 2,
 			mapTypeId: google.maps.MapTypeId.ROADMAP,
@@ -267,6 +288,9 @@ function initialize() {
 			overviewMapControlOptions: {
 				opened: false
 			}});
+	
+	// Place the logo image on the map
+	CreateLogoControl(map);
 	
 	q = new QueryString();
 	
