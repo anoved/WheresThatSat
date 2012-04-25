@@ -1,9 +1,8 @@
 #!/usr/bin/env ruby
 
-$testmode = true
-if (ARGV.length == 1 && ARGV[0] == 'furreal')
-	$testmode = false
-else
+$testmode = false
+if (ARGV.length == 1 && ARGV[0] == 'test')
+	$testmode = true
 	puts "Test mode"
 end
 
