@@ -1,7 +1,0 @@
-#min	hour	mday	month	wday	command
-
-# Update the bot. Currently disabled. Needs to be more selective about replies to avoid hitting Twitter rate limits.
-#*/5	*	*	*	*	cd /Users/anoved/Dropbox/Projects/Programming/WheresThatSat/; ruby WheresThatSat.rb
-
-# Update the TLE catalog. Done daily at 6:30 AM.
-30	6	*	*	*	cd /Users/anoved/Dropbox/Projects/Programming/WheresThatSat/; ruby UpdateCatalog.rb
