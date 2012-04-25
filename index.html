@@ -4,20 +4,26 @@
 	<title>Where's That Sat?</title>
 	<link rel="stylesheet" type="text/css" href="styles/wheresthatsat.css" />
 	<script charset="utf-8" src="http://widgets.twimg.com/j/2/widget.js"></script>
-
+	<script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
 	<div id="header">
 		<h1><a href="index.html">Where&rsquo;s That Sat?</a></h1>
 		<ul>
-			<li><a href="credits.html">Info</a></li>
+			<li><a href="satellites.html">Satellites</a></li>
+			<li><a href="acknowledgements.html">Acknowledgements</a></li>
 			<li><a href="feedback.html">Feedback</a></li>
 		</ul>
 	</div>
 	<div id="content">
 
+		<p class="logo"><img src="images/wheresthatsat.png" alt="WheresThatSat Logo"></p>
+		
+		<div id="intro" class="section">
+		<p><a href="http://twitter.com/wheresthatsat">@WheresThatSat</a> is a Twitter bot that knows where satellites are. <a href="https://twitter.com/intent/tweet?text=@WheresThatSat%20">Ask it about a satellite</a>, and it will respond with the present coordinates and a link to more detailed information.</p>
+		</div>
 
-		<div style="float:right;padding:10px;" class="section" id="tweets">
+		<div style="float:left;padding-right:20px;" class="section" id="tweets">
 		<script>
 		new TWTR.Widget({
 		  version: 2,
@@ -46,14 +52,19 @@
 		}).render().setUser('WheresThatSat').start();
 		</script>
 		</div>
-		
-		<div id="intro" class="section">
-		<p><a href="http://twitter.com/wheresthatsat">@WheresThatSat</a> is a Twitter bot that knows where satellites are. <a href="https://twitter.com/intent/tweet?text=@WheresThatSat%20">Ask it about a satellite</a>, and it will respond with the present coordinates and a link to more detailed information.</p>
-		</div>
+
 		
 		<div id="features" class="section">
-		<h3>Features</h3>
-		<p>Mention a satellite in a tweet to @WheresThatSat, and it will reply with the satellite's coordinates at the time you tweeted. It will also include a link to a map with more information about the satellite's recent path.</p>
+		<h3>Talking to WheresThatSat</h3>
+		<p>Using WheresThatSat is simple. Mention a satellite in a tweet to @WheresThatSat, and it will reply. Occasionally it may reply to other tweets about newsworthy satellites, but don't worry &mdash; it's not spam! WheresThatSat is just excited about your interest in satellites and wants to help you learn more.</p>
+
+<p>Here's an example. I ask WheresThatSat about the <a href="http://asd.gsfc.nasa.gov/archive/hubble/">Hubble Space Telescope</a>:</p>
+
+<blockquote class="twitter-tweet"><p>@<a href="https://twitter.com/WheresThatSat">WheresThatSat</a> Say, where's the Hubble space telescope right now?</p>&mdash; Jim (@anoved) <a href="https://twitter.com/anoved/status/195165596554493953" data-datetime="2012-04-25T15:01:18+00:00">April 25, 2012</a></blockquote>
+
+<p>A few minutes later, it replies:</p>
+
+<blockquote class="twitter-tweet" data-in-reply-to="195165596554493953"><p>@<a href="https://twitter.com/anoved">anoved</a> When you mentioned Hubble Space Telescope, it was above 24.6206S 74.6625W. Here's more info: <a href="http://t.co/eLhxXOdf" title="http://wheresthatsat.com/map.html?sn=Hubble+Space+Telescope&amp;un=anoved&amp;ut=195165596554493953&amp;t1=1335365838&amp;t2=1335366536&amp;ll=-19.9456,-89.1090&amp;ll=-21.2496,-85.5936&amp;ll=-22.4679,-82.0141&amp;ll=-23.5939,-78.3701&amp;ll=-24.6206,-74.6625&amp;ll=-25.5418,-70.8936&amp;ll=-26.3512,-67.0670&amp;ll=-27.0434,-63.1879&amp;ll=-27.6132,-59.2628&amp;ll=-28.0566,-55.2994&amp;ll=-28.3701,-51.3067&amp;ll=-28.5513,-47.2945&amp;ml=-24.6206,-74.6625&amp;ma=561.90&amp;ms=7.58&amp;mh=104.97&amp;mt=1335366078&amp;rl=-27.4188,-60.7069&amp;ra=563.21&amp;rs=7.58&amp;rh=98.44&amp;rt=1335366296">wheresthatsat.com/map.html?sn=Hu…</a></p>&mdash; Where's That Sat? (@WheresThatSat) <a href="https://twitter.com/WheresThatSat/status/195166512007495680" data-datetime="2012-04-25T15:04:57+00:00">April 25, 2012</a></blockquote>
 
 		<p>If your tweet is associated with a <a href="https://support.twitter.com/articles/78525-about-the-tweet-location-feature">location</a>, the map page will also indicate whether the satellite was potentially visible from that location (not taking into account weather and local variations in terrain).</p>
 		<p>Alternatively, you can specify an arbitrary location using the special <code>#place</code> hashtag. Name the location in quotes after the hashtag, like this:</p>
@@ -61,44 +72,6 @@
 		<p>WheresThatSat understands a variety of <code>#place</code> formats. You can give it a street address, the name of a city, or even just a pair of lat/lon coordinates.</p>
 		</div>
 		
-		<div id="catalog" class="section">
-		<h3>Satellite Catalog</h3>
-		<p>When you send a tweet to @WheresThatSat, it scans your message for the names of satellites it recognizes, and will send a reply for each match. It knows about over a thousand satellites! <a href="#">Here is a list of the satellite names it recognizes.</a> Matching is not case sensitive.</p>
-		</div>
-		
-		<div id="acknowledgements" class="section">
-		<h3>Acknowledgements</h3>
-		<p>The maps on this web site are produced with these tools:</p>
-		<ul>
-			<li><a href="https://developers.google.com/maps/documentation/javascript/">Google Maps API V3</a></li>
-			<li><a href="http://code.google.com/p/google-maps-utility-library-v3/wiki/Libraries#RichMarker">RichMarker</a> from <a href="http://code.google.com/p/google-maps-utility-library-v3/">Google Maps Utility Library V3</a></li>
-			<li><a href="http://unixpapa.com/js/querystring.html">Query String Parser</a> by Jon Wolter</li>
-			<li>Hosted on <a href="http://pages.github.com/">Github Pages</a></li>
-		</ul>
-		<p>The Twitter "bot" makes use of these Ruby gems:</p>
-		<ul>
-			<li><a href="http://muffinlabs.com/chatterbot.html">Chatterbot</a> by Colin Mitchell</li>
-			<li><a href="http://www.rubygeocoder.com/">Ruby Geocoder</a> by Alex Reisner</li>
-			<li><a href="https://github.com/mojombo/chronic">Chronic</a> by Tom Preston-Werner</li>
-		</ul>
-		<p>Last but not least, the site is </p>
-		<ul>
-			<li><a href="http://www.celestrak.com/NORAD/elements/">Current Two-Line Element Sets</a> via <a href="http://www.celestrak.com/">CelesTrak</a></li>
-			<li><a href="https://github.com/anoved/Ground-Track-Generator">Ground Track Generator</a> by me</li>
-		</ul>
-		</div>
-		
-		<div id="feedback" class="section">
-		<h3>Feedback</h3>
-		<p>Help make WheresThatSat better. Have an idea? Discovered a bug? Let me know.</p>
-		<ul>
-			<li>You can send questions and comments direction to <a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> on Twitter.</li>
-			<li>Email longer inquiries or more detailed feedback to <a href="mailto:WheresThatSat@gmail.com">WheresThatSat@gmail.com</a>.</li>
-			<li>Report bugs and technical problems at <a href="https://github.com/anoved/WheresThatSat/issues">github.com/anoved/WheresThatSat/issues</a>.</li>
-		</ul>
-		</div>
-		
-
 	</div>
 </body>
 </html>
