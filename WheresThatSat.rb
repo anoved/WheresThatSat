@@ -182,7 +182,7 @@ def RespondToSearches(acc_available, search_quota=20)
 					return acc
 				end
 				acc += 1
-				reply response tweet
+				reply response, tweet
 			end
 			
 		end
@@ -283,8 +283,8 @@ acc = RespondToMentions(ac_available)
 ac_consumed += acc
 ac_available -= acc
 
-#acc = RespondToSearches(ac_available)
-#ac_consumed += acc
-#ac_available -= acc
+acc = RespondToSearches(ac_available)
+ac_consumed += acc
+ac_available -= acc
 
 WriteAPICallCount(ac_consumed)
