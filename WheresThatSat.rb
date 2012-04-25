@@ -5,9 +5,9 @@ if (ARGV.length == 1 && ARGV[0] == 'test')
 	$testmode = true
 	puts "Test mode"
 end
-
+require 'rubygems'
 require 'chatterbot/dsl'
-	
+
 #debug_mode
 #verbose
 
