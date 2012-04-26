@@ -1,6 +1,4 @@
 //
-// The Microsoft Taint
-//
 // Per https://developer.mozilla.org/en/DOM/element.addEventListener#Legacy_Internet_Explorer_and_attachEvent
 // versions of Internet Explorer prior to IE9 (ie, all XP versions) do not understand .addEventListener and
 // must be catered to with their own special little snowflake .attachEvent.
@@ -19,6 +17,24 @@ function AddEventListenerToElement(theElement, theEvent, theListener) {
 	} else if (theElement.attachEvent) {
 		theElement.attachEvent(theEvent, theListener);
 	}
+}
+
+//
+// Transformation matrix filter for CSS rotation in older versions of MSIE.
+//
+// Parameters:
+//   heading (degrees)
+//
+// Returns:
+//   string value for filter: or -ms-filter:"" styles
+// 
+function MSIERotationFilter(heading) {
+	var theta = heading * Math.PI * 2.0 / 360.0; // heading in radians
+	var costheta = Math.cos(theta);
+	var sintheta = Math.sin(theta);
+	return 'progid:DXImageTransform.Microsoft.Matrix(M11='+ costheta + ',M12=' +
+			(-1 * sintheta) + ',M21=' + sintheta + ',M22=' + costheta +
+			',sizingMethod=\'auto expand\');';
 }
 
 //
@@ -171,12 +187,16 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 	var icon_div = document.createElement('div');
 	icon_div.setAttribute('id', id + '-marker');
 	icon_div.setAttribute('class', 'satmarker');
+	var msie_rotation_filter = MSIERotationFilter(heading);
 	// transform-origin: 50% 50% (MIDDLE); should be default
 	icon_div.setAttribute('style',
 			'-webkit-transform:rotate(' + heading + 'deg);' +
 			'-moz-transform:rotate(' + heading + 'deg);' +
 			'-o-transform:rotate(' + heading + 'deg);' +
-			'-ms-transform:rotate(' + heading + 'deg);');
+			'-ms-transform:rotate(' + heading + 'deg);' +
+			'transform:rotate(' + heading + 'deg);' + 
+			'-ms-filter:"' + msie_rotation_filter + '";' +
+			'filter:' + msie_rotation_filter + ';');
 	var icon_img = document.createElement('img');
 	icon_img.setAttribute('src', icon_path);
 	icon_div.appendChild(icon_img);
