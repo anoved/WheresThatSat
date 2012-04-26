@@ -1,4 +1,27 @@
 //
+// The Microsoft Taint
+//
+// Per https://developer.mozilla.org/en/DOM/element.addEventListener#Legacy_Internet_Explorer_and_attachEvent
+// versions of Internet Explorer prior to IE9 (ie, all XP versions) do not understand .addEventListener and
+// must be catered to with their own special little snowflake .attachEvent.
+//
+// Parameters:
+//   theElement (element to attach event listener to)
+//   theEvent (the type of event to listen for)
+//   theListener (the function to be notified when the event occurs)
+//
+// Results:
+//   theListener is invoked when theEvent occurs in theElement
+//
+function AddEventListenerToElement(theElement, theEvent, theListener) {
+	if (theElement.addEventListener) {
+		theElement.addEventListener(theEvent, theListener);
+	} else if (theElement.attachEvent) {
+		theElement.attachEvent(theEvent, theListener);
+	}
+}
+
+//
 // Parameters:
 //   heading (degrees in range 0 <= heading <= 360)
 //
@@ -125,8 +148,8 @@ function SetupMarkerPanelHighlights(marker, marker_content, panel) {
 	google.maps.event.addListener(marker, 'mouseout', mouseout_function);
 	
 	// Panel mouseover/mouseout events
-	panel.addEventListener('mouseover', mouseover_function);
-	panel.addEventListener('mouseout', mouseout_function);
+	AddEventListenerToElement(panel, 'mouseover', mouseover_function);
+	AddEventListenerToElement(panel, 'mouseout', mouseout_function);
 }
 
 //
@@ -206,8 +229,7 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 	SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 	
 	var infoicon = document.getElementById(id + '-icon');
-	infoicon.addEventListener('click', function() {map.panTo(point);});
-
+	AddEventListenerToElement(infoicon, 'click', function() {map.panTo(point);});
 }
 
 //
@@ -345,7 +367,7 @@ function initialize() {
 			
 			// Center map on observer marker if the description icon is clicked
 			var obsinfoicon = document.getElementById('observer-icon');
-			obsinfoicon.addEventListener('click', function() {map.panTo(point);});
+			AddEventListenerToElement(obsinfoicon, 'click', function() {map.panTo(point);});
 		}
 
 		map.fitBounds(traceExtent);
