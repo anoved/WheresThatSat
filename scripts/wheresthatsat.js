@@ -77,7 +77,7 @@ function FormatLatLon(ll) {
 //
 function CoordinateParameterToLatLon(coordinates) {
 	var latlon_strings = coordinates.split(',');
-	return latlon_strings.map(function(x) {return parseFloat(x);});
+	return Array(parseFloat(latlon_strings[0]), parseFloat(latlon_strings[1]));
 }
 
 //
