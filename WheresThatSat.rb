@@ -198,8 +198,13 @@ def RespondToMentions(acc_available)
 		puts STDERR, "Not responding to mentions: rate limit"
 		return 0
 	end
-	acc = 1	
-	replies do |tweet|		
+	acc = 1
+	replies do |tweet|
+		
+		# To avoid redundant replies to retweets/quotes of our own tweets,
+		# ignore mentions that aren't actually direct @replies.
+		if !tweet[:text].match(/^@WheresThatSat/i) then next end
+		
 		$catalog.keys.each do |satellite_name|
 			if tweet[:text].match(/\b#{satellite_name}\b/i)
 				
