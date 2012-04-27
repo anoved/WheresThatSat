@@ -1,21 +1,17 @@
-# intervals.yml contains API call counts for tracking rate limiting
-/config/intervals.yml
+# Soft links to real config files and data in the deployment directory
+# (Chatterbot modifies the bot config script with since_id, so it's not static)
+WheresThatSat.yml
+/config
+/tle
 
-# sat_searches.yml contains satellite names to search for and reply to
-/config/sat_searches.yml
+# Default bot config (contains API keys)
+/default-config/WheresThatSat.yml
 
-# wts_crontab contains the schedule for running WheresThatSat and UpdateCatalog
+# Contains the schedule for running WheresThatSat and UpdateCatalog
 /wts_crontab
 
 # Local copy of gtg
 /gtg
-
-# TLE catalog is automatically generated and may change frequently.
-/config/catalog.yml
-/tle
-
-# Bot configuration file contains API keys
-WheresThatSat.yml
 
 # Reference copy of Chatterbot source code
 /chatterbot
