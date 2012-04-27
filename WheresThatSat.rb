@@ -33,12 +33,13 @@ end
 def ParseTweetLocation(tweet)
 	geo = nil
 	if (tweet[:text].match(/\#place "([^"]+)"/i))
-		geocode = Geocoder.search($1)
+		geoquery = $1
+		geocode = Geocoder.search(geoquery)
 		if (geocode.length > 0)
 			geo = WTSObserver.new
 			geo.lat = geocode[0].latitude
 			geo.lon = geocode[0].longitude
-			geo.name = geocode[0].address
+			geo.name = "\"#{geoquery}\""
 		end
 	elsif (tweet[:geo] != nil)
 		geo = WTSObserver.new
