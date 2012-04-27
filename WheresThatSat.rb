@@ -152,6 +152,7 @@ def RespondToSearches(acc_available, search_quota=20)
 	
 	# load the list of satellite names to search for
 	satellite_queries = YAML.load_file('config/sat_searches.yml')
+	if satellite_queries == nil then return acc end
 	
 	satellite_queries.each do |satellite_name|
 		
