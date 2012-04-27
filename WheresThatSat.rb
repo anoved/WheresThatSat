@@ -206,7 +206,11 @@ def RespondToMentions(acc_available)
 		if !tweet[:text].match(/^@WheresThatSat/i) then next end
 		
 		$catalog.keys.each do |satellite_name|
-			if tweet[:text].match(/\b#{satellite_name}\b/i)
+			
+			# match hyphenated or non-hyphenated forms of satellite_name
+			satellite_name_pattern = satellite_name.gsub(/(?: |-)/, "[ -]");
+			
+			if tweet[:text].match(/\b#{satellite_name_pattern}\b/i)
 				
 				# By default, plot ground track from mention time to our reply time.
 				input_timestamp = ParseReplyTimestamp(tweet[:created_at])
