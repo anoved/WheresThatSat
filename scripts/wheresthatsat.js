@@ -320,7 +320,7 @@ function initialize() {
 			backgroundColor: "white",
 			center: new google.maps.LatLng(0, 0),
 			zoom: 2,
-			mapTypeId: google.maps.MapTypeId.ROADMAP,
+			mapTypeId: google.maps.MapTypeId.TERRAIN,
 			panControl: true,
 			zoomControl: true,
 			mapTypeControl: true,
