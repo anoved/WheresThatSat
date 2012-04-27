@@ -1,6 +1,12 @@
 # intervals.yml contains API call counts for tracking rate limiting
 /config/intervals.yml
 
+# sat_searches.yml contains satellite names to search for and reply to
+/config/sat_searches.yml
+
+# wts_crontab contains the schedule for running WheresThatSat and UpdateCatalog
+/wts_crontab
+
 # Local copy of gtg
 /gtg
 
@@ -13,3 +19,6 @@ WheresThatSat.yml
 
 # Reference copy of Chatterbot source code
 /chatterbot
+
+# Bot icon artwork scratch files
+/Icon
