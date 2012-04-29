@@ -30,7 +30,7 @@ end
 
 # returns nil if no location can be parsed
 # otherwise returns a WTSObserver object
-def ParseTweetLocation(tweet)
+def parseTweetLocation(tweet)
 	geo = nil
 	if (tweet[:text].match(/\#place "([^"]+)"/i))
 		geoquery = $1
@@ -61,7 +61,7 @@ def ParseTweetLocation(tweet)
 	return geo
 end
 
-def GoGoGTG(gtg_args)
+def goGoGTG(gtg_args)
 	gtg_cmd = './gtg ' + gtg_args
 	gtg_pipe = IO.popen(gtg_cmd)
 	gtg_data = gtg_pipe.read
@@ -78,7 +78,7 @@ end
 # response_time - integer unix timestamp of reply time. Suppress reply time marker if < 0.
 # is_geo, boolean whether observer location is defined (true if yes)
 #
-def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, geo)
+def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, geo)
 	
 	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
 	
@@ -87,7 +87,7 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	trace_end_time = (response_time < 0 ? mention_time : response_time) + (4 * 60)
 	url += format '&t1=%d&t2=%d', trace_start_time, trace_end_time
 	trace_cmd = format '--input "%s" --format csv --start "%d" --end "%d" --interval 1m', tle_path, trace_start_time, trace_end_time
-	trace_data = GoGoGTG(trace_cmd)
+	trace_data = goGoGTG(trace_cmd)
 	trace_data.each do |point|
 		url += format '&ll=%.4f,%.4f', point[1], point[2]
 	end
@@ -98,7 +98,7 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	# mention
 	mention_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
 	if geo != nil then mention_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo.lat, geo.lon end
-	m = GoGoGTG(mention_cmd)[0]
+	m = goGoGTG(mention_cmd)[0]
 	mention_lat = m[1].to_f
 	mention_lon = m[2].to_f
 	url += format '&ml=%.4f,%.4f&ma=%.2f&ms=%.2f&mh=%.2f&mt=%d', m[1], m[2], m[3], m[4], m[5], mention_time
@@ -108,7 +108,7 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	if (response_time >= 0)
 		reply_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
 		if geo != nil then reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo.lat, geo.lon end
-		r = GoGoGTG(reply_cmd)[0]
+		r = goGoGTG(reply_cmd)[0]
 		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
 		if geo != nil then url += format '&ri=%d&re=%.2f&rz=%.2f&ro=%.2f', r[6], r[7], r[8], r[9] end
 	end
@@ -120,13 +120,13 @@ def TheresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 end
 
 # sets $catalog global variable to hash of satellite names -> TLE file paths
-def LoadSatelliteCatalog(catalog_path='config/catalog.yml')
+def loadSatelliteCatalog(catalog_path='config/catalog.yml')
 	$catalog = YAML.load_file(catalog_path)
 end
 
 # returns Time object
 # example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
-def ParseSearchTimestamp(created_at)
+def parseSearchTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[4].split(':')
 	return Time.utc(parts[3], parts[2], parts[1], hms[0], hms[1], hms[2], 0)
@@ -134,7 +134,7 @@ end
 
 # returns Time object
 # example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
-def ParseReplyTimestamp(created_at)
+def parseReplyTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[3].split(':')
 	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
@@ -145,7 +145,7 @@ end
 #  regardless of how many calls are available. will not perform more than min
 #  of search_quota and acc_available.
 # returns number of API calls consumed (acc)
-def RespondToSearches(acc_available, search_quota=20)
+def respondToSearches(acc_available, search_quota=20)
 
 	if (acc_available < search_quota) then search_quota = acc_available end
 	
@@ -169,12 +169,12 @@ def RespondToSearches(acc_available, search_quota=20)
 			if tweet[:text].match(/@WheresThatSat/i) then next end
 			
 			# time
-			input_timestamp = ParseSearchTimestamp(tweet[:created_at])
+			input_timestamp = parseSearchTimestamp(tweet[:created_at])
 			output_timestamp = Time.now.utc
 	
-			response = TheresThatSat satellite_name, $catalog[satellite_name],
+			response = theresThatSat satellite_name, $catalog[satellite_name],
 					from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-					ParseTweetLocation(tweet)
+					parseTweetLocation(tweet)
 			
 			if $testmode
 				puts response
@@ -195,7 +195,7 @@ end
 
 # parameter acc_available: number of API calls available
 # returns number of API calls consumed (acc)
-def RespondToMentions(acc_available)
+def respondToMentions(acc_available)
 	if (acc_available == 0)
 		puts STDERR, "Not responding to mentions: rate limit"
 		return 0
@@ -215,7 +215,7 @@ def RespondToMentions(acc_available)
 			if tweet[:text].match(/\b#{satellite_name_pattern}\b/i)
 				
 				# By default, plot ground track from mention time to our reply time.
-				input_timestamp = ParseReplyTimestamp(tweet[:created_at])
+				input_timestamp = parseReplyTimestamp(tweet[:created_at])
 				output_timestamp = Time.now.utc
 				
 				# Don't respond to this tweet if it's too old (overriding even
@@ -235,9 +235,9 @@ def RespondToMentions(acc_available)
 					end
 				end
 		
-				response = TheresThatSat satellite_name, $catalog[satellite_name],
+				response = theresThatSat satellite_name, $catalog[satellite_name],
 						from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-						ParseTweetLocation(tweet)
+						parseTweetLocation(tweet)
 				
 				if ($testmode)
 					# In test mode, just print the response for inspection.
@@ -260,14 +260,14 @@ end
 
 # returns current API call count (cumulative for the past hour, or whatever
 # period is represented by the set of per-interval call counts in :intervals)
-def ReadAPICallCount()
+def readAPICallCount()
 	acc_intervals = YAML.load_file("config/intervals.yml")[:intervals]
 	return acc_intervals.inject(0) {|sum, value| sum + value}
 end
 
 # writes current API call count; updates :intervals with current interval's acc
 # and drops any old interval counts. returns final call count.
-def WriteAPICallCount(acc)
+def writeAPICallCount(acc)
 	
 	intervals = YAML.load_file("config/intervals.yml")[:intervals]
 	
@@ -284,18 +284,18 @@ def WriteAPICallCount(acc)
 end
 
 
-LoadSatelliteCatalog()
+loadSatelliteCatalog()
 
-ac_initial = ReadAPICallCount()
+ac_initial = readAPICallCount()
 ac_available = 150 - ac_initial
 ac_consumed = 0
 
-acc = RespondToMentions(ac_available)
+acc = respondToMentions(ac_available)
 ac_consumed += acc
 ac_available -= acc
 
-acc = RespondToSearches(ac_available)
+acc = respondToSearches(ac_available)
 ac_consumed += acc
 ac_available -= acc
 
-WriteAPICallCount(ac_consumed)
+writeAPICallCount(ac_consumed)
