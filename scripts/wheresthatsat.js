@@ -121,7 +121,8 @@ function CoordinateParameterToLatLon(coordinates) {
 
 //
 // Parameters:
-//   container (parent element for panel)
+//   doc (HTML document containing the panel)
+//   container (immediate parent element of panel)
 //   caption (HTML content for panel)
 //   id (id string for panel)
 //
@@ -131,8 +132,8 @@ function CoordinateParameterToLatLon(coordinates) {
 // Returns:
 //   panel div element
 //
-function CreateInfoPanel(container, caption, id) {
-	var infodiv = document.createElement('div');
+function CreateInfoPanel(doc, container, caption, id) {
+	var infodiv = doc.createElement('div');
 	infodiv.className = 'infopanel';
 	infodiv.setAttribute('id', id + '-info');
 	infodiv.innerHTML = caption;
@@ -178,17 +179,18 @@ function SetupMarkerPanelHighlights(marker, marker_content, panel) {
 function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 		coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
 		solarelev_arg, user_name, satellite_name, icon_path, container, id, intro, future) {
-		
+	
+	// Parse basic information about the satellite at this position
 	var altitude = parseFloat(q.value(altitude_arg));
 	var heading = parseFloat(q.value(heading_arg));
 	var direction = HeadingToCompassDirection(heading);
 	var speed = parseFloat(q.value(speed_arg));
-
+	
+	// Create the marker icon, rotated to match heading
 	var icon_div = document.createElement('div');
 	icon_div.setAttribute('id', id + '-marker');
 	icon_div.setAttribute('class', 'satmarker');
 	var msie_rotation_filter = MSIERotationFilter(heading);
-	// transform-origin: 50% 50% (MIDDLE); should be default
 	icon_div.setAttribute('style',
 			'-webkit-transform:rotate(' + heading + 'deg);' +
 			'-moz-transform:rotate(' + heading + 'deg);' +
@@ -200,7 +202,8 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 	var icon_img = document.createElement('img');
 	icon_img.setAttribute('src', icon_path);
 	icon_div.appendChild(icon_img);
-					
+	
+	// Create the map marker, using the created icon as content
 	var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
 	var point = new google.maps.LatLng(ll[0], ll[1]);
 	var marker = new RichMarker({
@@ -211,12 +214,16 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 			flat: true,
 			map: map,
 			content: icon_div});
-
+	
+	// Assemble the caption from basic information
 	var caption = '<p><img id="' + id + '-icon" class="infoicon" src="' + icon_path + '">' +
 			intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 			', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 	
+	// If observer information is available, append potential visibility note to caption
 	if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
+		
+		// Parse the additional observer-related information
 		var illumination = parseInt(q.value(illumination_arg), 10);
 		var elevation = parseFloat(q.value(elevation_arg));
 		var azimuth = parseFloat(q.value(azimuth_arg));
@@ -245,9 +252,11 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 		}
 	}
 	
-	var infopanel = CreateInfoPanel(container, caption, id);
+	// Display the caption in the sidebar
+	var infopanel = CreateInfoPanel(document, container, caption, id);
 	SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 	
+	// Click icon in caption to pan to marker on map
 	var infoicon = document.getElementById(id + '-icon');
 	AddEventListenerToElement(infoicon, 'click', function() {map.panTo(point);});
 }
@@ -285,6 +294,7 @@ function PlotGroundTrack(map, coordinateParameters) {
 
 //
 // Parameters:
+//   doc (HTML document for logo)
 //   map (basemap for logo)
 //
 // Results:
@@ -293,10 +303,10 @@ function PlotGroundTrack(map, coordinateParameters) {
 // Returns:
 //   div containing logo
 //
-function CreateLogoControl(map) {
-	var logoDiv = document.createElement('div');
+function CreateLogoControl(doc, map) {
+	var logoDiv = doc.createElement('div');
 	logoDiv.setAttribute('id', 'logo');
-	var logoImg = document.createElement('img');
+	var logoImg = doc.createElement('img');
 	logoImg.setAttribute('src', 'images/wheresthatsat.png');
 	logoImg.setAttribute('alt', 'WheresThatSat Logo');
 	logoDiv.appendChild(logoImg);
@@ -332,7 +342,7 @@ function initialize() {
 			}});
 	
 	// Place the logo image on the map
-	CreateLogoControl(map);
+	CreateLogoControl(document, map);
 	
 	q = new QueryString();
 	
@@ -343,7 +353,7 @@ function initialize() {
 	var satelliteName = q.value('sn');
 	var userName = q.value('un');
 	var tweetID = q.value('ut');
-	
+		
 	// Fundamental feature: ground track
 	if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
 		
@@ -362,7 +372,7 @@ function initialize() {
 		var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 		var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
 		var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
-		CreateInfoPanel(rightpanel, caption, 'trace');
+		CreateInfoPanel(document, rightpanel, caption, 'trace');
 	
 		// Optional feature: observer position.
 		if (q.exists('ol')) {
@@ -383,7 +393,7 @@ function initialize() {
 			var obscaption = '<p><img id="observer-icon" class="infoicon" src="images/observer.png">';
 			if (q.exists('on')) obscaption += 'The observer location is ' + FormatLatLon(ol) + ' (' + q.value('on') + ').</p>';
 			else obscaption += 'The observer location is ' + FormatLatLon(ol) + '.</p>';
-			var obsinfo = CreateInfoPanel(rightpanel, obscaption, 'observer');
+			var obsinfo = CreateInfoPanel(document, rightpanel, obscaption, 'observer');
 			
 			// Center map on observer marker if the description icon is clicked
 			var obsinfoicon = document.getElementById('observer-icon');
@@ -440,12 +450,12 @@ function initialize() {
 		
 		// Prompt user to ask about this satellite again
 		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
-		CreateInfoPanel(rightpanel, askcaption, 'ask');
+		CreateInfoPanel(document, rightpanel, askcaption, 'ask');
 		
 		// Display referrer link iff it's a t.co shortlink
 		if ((document.referrer !== '') && (document.referrer.split('/')[2] === 't.co')) {
 			var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
-			CreateInfoPanel(rightpanel, refcaption, 'referrer');
+			CreateInfoPanel(document, rightpanel, refcaption, 'referrer');
 		}
 	
 	}
