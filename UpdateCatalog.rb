@@ -7,7 +7,7 @@ require './wtsutil.rb'
 urls = YAML.load_file('config/tle_sources.yml');
 
 # load the current catalog
-catalog = WTS.load_catalog('testcatalog.yml')
+catalog = WTS.load_catalog
 
 # names of satellites initially present in the catalog
 initial = catalog[:tle].keys
@@ -55,4 +55,4 @@ end
 removed = initial - (updates + additions)
 removed.each {|oldKey| catalog[:tle].delete(oldKey)}
 
-WTS.write_catalog(catalog, 'testcatalog.yml')
+WTS.write_catalog(catalog)
