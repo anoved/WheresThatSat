@@ -206,7 +206,7 @@ function FormatVisibilityCaption(info) {
 			caption += ' will probably <em>not</em> be';
 			waswillbe = 'will be';
 		} else {
-			caption += '<p>' + info.satelliteName + ' was probably <em>not</em>';
+			caption += ' was probably <em>not</em>';
 			waswillbe = 'was';
 		}
 		caption += ' visible from the observer location at this time. (';
@@ -222,24 +222,52 @@ function FormatVisibilityCaption(info) {
 
 //
 // Parameters:
-//   too many
+//   v, a variable
+//
+// Returns:
+//   false if v is undefined, otherwise true
+//
+function IsDefined(v) {
+	if (typeof(v) === "undefined")
+		return false;
+	else
+		return true;
+}
+
+//
+// Parameters:
+//   info:
+//     altitude
+//     heading
+//     speed
+//     coordinates
+//     illumination
+//     elevation
+//     azimuth
+//     solarelev
+//     satelliteName
+//     iconPath (relative to map page)
+//     doc (HTML document)
+//     map (Google Map)
+//     container (for sidebar panels)
+//     id (location descriptor)
+//     captionIntro (text)
+//     future (boolean)
 //
 // Results:
 //   creates sat location map marker and corresponding info panel
 //
-function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
-		coordinates_arg, illumination_arg, elevation_arg, azimuth_arg,
-		solarelev_arg, user_name, satellite_name, icon_path, container, id, intro, future) {
+function PlotSatelliteLocation(info) {
 	
 	// Parse basic information about the satellite at this position
-	var altitude = parseFloat(q.value(altitude_arg));
-	var heading = parseFloat(q.value(heading_arg));
+	var altitude = parseFloat(info.altitude);
+	var heading = parseFloat(info.heading);
 	var direction = HeadingToCompassDirection(heading);
-	var speed = parseFloat(q.value(speed_arg));
+	var speed = parseFloat(info.speed);
 	
 	// Create the marker icon, rotated to match heading
-	var icon_div = document.createElement('div');
-	icon_div.setAttribute('id', id + '-marker');
+	var icon_div = info.doc.createElement('div');
+	icon_div.setAttribute('id', info.id + '-marker');
 	icon_div.setAttribute('class', 'satmarker');
 	var msie_rotation_filter = MSIERotationFilter(heading);
 	icon_div.setAttribute('style',
@@ -250,12 +278,12 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 			'transform:rotate(' + heading + 'deg);' + 
 			'-ms-filter:"' + msie_rotation_filter + '";' +
 			'filter:' + msie_rotation_filter + ';');
-	var icon_img = document.createElement('img');
-	icon_img.setAttribute('src', icon_path);
+	var icon_img = info.doc.createElement('img');
+	icon_img.setAttribute('src', info.iconPath);
 	icon_div.appendChild(icon_img);
 	
 	// Create the map marker, using the created icon as content
-	var ll = CoordinateParameterToLatLon(q.value(coordinates_arg));
+	var ll = CoordinateParameterToLatLon(info.coordinates);
 	var point = new google.maps.LatLng(ll[0], ll[1]);
 	var marker = new RichMarker({
 			position: point,
@@ -263,32 +291,33 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 			draggable: false,
 			anchor: RichMarkerPosition.MIDDLE,
 			flat: true,
-			map: map,
+			map: info.map,
 			content: icon_div});
 	
 	// Assemble the caption from basic information
-	var caption = '<p><img id="' + id + '-icon" class="infoicon" src="' + icon_path + '">' +
-			intro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
+	var caption = '<p><img id="' + info.id + '-icon" class="infoicon" src="' + info.iconPath + '">' +
+			info.captionIntro + ' at an altitude of ' +	altitude + ' km above ' + FormatLatLon(ll) +
 			', moving ' + direction + ' (' + heading + '&deg;) at ' + speed + ' km/s.</p>';
 	
-	// If observer information is available, append potential visibility note to caption
-	if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
+	// If observer information is available, append visibility note to caption
+	if (IsDefined(info.illumination) && IsDefined(info.elevation) &&
+			IsDefined(info.azimuth) && IsDefined(info.solarelev)) {
 		caption += FormatVisibilityCaption({
-				illumination: q.value(illumination_arg),
-				elevation: q.value(elevation_arg),
-				azimuth: q.value(azimuth_arg),
-				solarelev: q.value(solarelev_arg),
-				future: future,
-				satelliteName: satellite_name});
+				illumination: info.illumination,
+				elevation: info.elevation,
+				azimuth: info.azimuth,
+				solarelev: info.solarelev,
+				future: info.future,
+				satelliteName: info.satelliteName});
 	}
 	
 	// Display the caption in the sidebar
-	var infopanel = CreateInfoPanel(document, container, caption, id);
+	var infopanel = CreateInfoPanel(document, info.container, caption, info.id);
 	SetupMarkerPanelHighlights(marker, icon_div, infopanel);
 	
 	// Click icon in caption to pan to marker on map
-	var infoicon = document.getElementById(id + '-icon');
-	AddEventListenerToElement(infoicon, 'click', function() {map.panTo(point);});
+	var infoicon = info.doc.getElementById(info.id + '-icon');
+	AddEventListenerToElement(infoicon, 'click', function() {info.map.panTo(point);});
 }
 
 //
@@ -461,19 +490,45 @@ function initialize() {
 			}
 			
 			// Fling a bunch of parameters at the map and see what sticks!
-			MarkPlace(map, q, 'ma', 'mh', 'ms', 'ml', 'mi', 'me', 'mz', 'mo',
-					userName, satelliteName, 'images/a.png', rightpanel, 'mention',
-					intro, future);				
+			PlotSatelliteLocation({
+					altitude: q.value('ma'),
+					heading: q.value('mh'),
+					speed: q.value('ms'),
+					coordinates: q.value('ml'),
+					illumination: q.value('mi'),
+					elevation: q.value('me'),
+					azimuth: q.value('mz'),
+					solarelev: q.value('mo'),
+					satelliteName: satelliteName,
+					iconPath: 'images/a.png',
+					doc: document,
+					map: map,
+					container: rightpanel,
+					id: 'mention',
+					captionIntro: intro,
+					future: future});
 					
 			// Create marker to represent Reply position, if specified.
 			if (!no_response_marker) {
-
 				var rtimestamp = new Date(parseInt(q.value('rt'), 10) * 1000);
 				var rintro = 'When @WheresThatSat replied on ' + FormatTimestamp(rtimestamp) + ', ' + satelliteName + ' was';
-				
-				MarkPlace(map, q, 'ra', 'rh', 'rs', 'rl', 'ri', 're', 'rz', 'ro',
-						userName, satelliteName, 'images/b.png', rightpanel, 'reply',
-						rintro, false);
+				PlotSatelliteLocation({
+					altitude: q.value('ra'),
+					heading: q.value('rh'),
+					speed: q.value('rs'),
+					coordinates: q.value('rl'),
+					illumination: q.value('ri'),
+					elevation: q.value('re'),
+					azimuth: q.value('rz'),
+					solarelev: q.value('ro'),
+					satelliteName: satelliteName,
+					iconPath: 'images/b.png',
+					doc: document,
+					map: map,
+					container: rightpanel,
+					id: 'reply',
+					captionIntro: rintro,
+					future: false});
 			}
 		
 		}
