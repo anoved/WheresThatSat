@@ -3,6 +3,42 @@
 require 'yaml'
 require 'open-uri'
 require './wtsutil.rb'
+require 'cgi'
+
+def formatAliasList(catalog)
+	text = "<ul>\n"
+	catalog[:alias].sort.each do |aliasName, canonicalName|
+		text += "<li>#{aliasName} &rarr; #{canonicalName}</li>\n"
+	end
+	text += "</ul>\n"
+	return text
+end
+
+def formatSatelliteList(catalog)
+	text = "<table><tr>\n<td><ul>"
+	perColumn = (catalog[:tle].keys.length / 3.0).ceil
+	count = 0
+	catalog[:tle].keys.sort.each do |name|
+		searchLink = "http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=%s" % CGI.escape(name)
+		text += "<li><a href=\"#{searchLink}\">#{name}</a></li>\n"
+		count += 1
+		if count > perColumn
+			text += "</ul></td>\n<td><ul>\n"
+			count = 0
+		end
+	end
+	text += "</ul></td>\n</tr></table>\n"
+	return text
+end
+
+def updateCatalogPage(catalog, templatePath)
+	templateFile = open templatePath
+	text = templateFile.read
+	templateFile.close
+	text.gsub!(/<!--ALIAS NAMES-->/, formatAliasList(catalog))
+	text.gsub!(/<!--CANONICAL NAMES-->/, formatSatelliteList(catalog))
+	return text
+end
 
 urls = YAML.load_file('config/tle_sources.yml');
 
