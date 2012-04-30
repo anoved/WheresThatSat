@@ -1,59 +1,58 @@
 #!/usr/bin/env ruby
 
-# This script retrieves current TLE files from Celestrak for the satellites
-# defined in our catalog, satellites.txt, which is a list of satellite names
-# exactly as they appear in the Celestrak files
-
 require 'yaml'
 require 'open-uri'
+require './wtsutil.rb'
 
-# load the list of TLE lists to load
-tle_urls = YAML.load_file('config/tle_sources.yml')
+urls = YAML.load_file('config/tle_sources.yml');
 
-catalog = {}
-tle_urls.each do |tle_url|
+# load the current catalog
+catalog = WTS.load_catalog('testcatalog.yml')
+
+# names of satellites initially present in the catalog
+initial = catalog[:tle].keys
+
+# names of new satellites added in this update
+additions = []
+
+# names of existing satellites that are updated
+updates = []
+
+urls.each do |url|
 	
-	puts "Updating index: #{tle_url}"
+	# read the TLE index
+	index = open url
+	content = index.read.split("\r\n")
+	index.close
 	
-	# load this TLE list
-	tle_index = open tle_url
-	tle_lines = tle_index.read.split("\r\n")
-	tle_index.close
-	
-	# split into sets of three lines: NAME, 1..., 2...
+	# split into sets of three lines (names + two line element set)
 	line = 0
-	while line + 2 <= tle_lines.length 
+	while line + 2 <= content.length
 	
-		tle_name = tle_lines[line]
-		tle_text = tle_lines[line..line+2].join("\n")
+		tleName = content[line]
+		tleText = content[line+1..line+2].join("\n")
 		
-		# remove alternate names, status codes, and extra whitespace from name		
-		tle_name.gsub!(/\(.+?\)/, "")
-		tle_name.gsub!(/\[.+?\]/, "")
-		tle_name.rstrip!
+		# remove alternate names, status codes, and extra whitespace from name
+		tleName.gsub!(/\(.+?\)/, "")
+		tleName.gsub!(/\[.+?\]/, "")
+		tleName.rstrip!
 		
-		# replace any non-alphanumeric characters in the name with underscores
-		tle_filename = "tle/" + tle_name.gsub(/[^A-Za-z0-9]+/, "_") + ".tle"
-		
-		# save the tle text to tle_filename
-		tle_file = open tle_filename, "w"
-		tle_file.write tle_text + "\n"
-		tle_file.close
-		
-		# Put this TLE in the catalog. Consider putting a few variations of the
-		# name in the catalog - with and without hyphens, for example.
-		# Avoid writing duplicates; some sats are listed in multiple indices.
-		if ! catalog.include? tle_name
-			catalog[tle_name] = tle_filename
+		if catalog[:tle].include?(tleName)
+			updates.push(tleName)
+		else
+			additions.push(tleName)
 		end
 		
+		catalog[:tle][tleName] = tleText
+		
 		line += 3
+		
 	end
+	
 end
 
-# special cases - extra/popular names
-catalog["International Space Station"] = "tle/ISS.tle"
-catalog["Hubble Space Telescope"] = "tle/HST.tle"
+# names of satellites to remove (present initially but no longer in indices)
+removed = initial - (updates + additions)
+removed.each {|oldKey| catalog[:tle].delete(oldKey)}
 
-# write the catalog to file
-File.open('config/catalog.yml', 'w') {|file| YAML.dump(catalog, file)}
+WTS.write_catalog(catalog, 'testcatalog.yml')

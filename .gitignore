@@ -1,8 +1,6 @@
-# Soft links to real config files and data in the deployment directory
-# (Chatterbot modifies the bot config script with since_id, so it's not static)
+# ignore config files
 WheresThatSat.yml
 /config
-/tle
 
 # Default bot config (contains API keys)
 /default-config/WheresThatSat.yml

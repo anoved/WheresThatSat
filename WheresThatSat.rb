@@ -19,6 +19,8 @@ require 'yaml'
 # for url encoding
 require 'cgi'
 
+require './wtsutil'
+
 require 'chronic'
 require 'geocoder'
 
@@ -71,14 +73,14 @@ end
 
 #
 # satellite_name, display name of satellite
-# tle_path, path to satellite TLE file
+# tle_data, two-line element set of satellite
 # user_name, input twitter username
 # tweet_id, input tweet_id
 # mention_time - integer unix timestamp of focal time
 # response_time - integer unix timestamp of reply time. Suppress reply time marker if < 0.
 # is_geo, boolean whether observer location is defined (true if yes)
 #
-def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, response_time, geo)
+def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, geo)
 	
 	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
 	
@@ -86,7 +88,7 @@ def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	trace_start_time = mention_time - (4 * 60)
 	trace_end_time = (response_time < 0 ? mention_time : response_time) + (4 * 60)
 	url += format '&t1=%d&t2=%d', trace_start_time, trace_end_time
-	trace_cmd = format '--input "%s" --format csv --start "%d" --end "%d" --interval 1m', tle_path, trace_start_time, trace_end_time
+	trace_cmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle_data, trace_start_time, trace_end_time
 	trace_data = goGoGTG(trace_cmd)
 	trace_data.each do |point|
 		url += format '&ll=%.4f,%.4f', point[1], point[2]
@@ -96,7 +98,7 @@ def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	if geo != nil then url += format '&ol=%.4f,%.4f&on=%s', geo.lat, geo.lon, CGI.escape(geo.name) end
 	
 	# mention
-	mention_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, mention_time
+	mention_cmd = format '--tle "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_data, mention_time
 	if geo != nil then mention_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo.lat, geo.lon end
 	m = goGoGTG(mention_cmd)[0]
 	mention_lat = m[1].to_f
@@ -106,7 +108,7 @@ def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	
 	# response (none if response_time < 0)
 	if (response_time >= 0)
-		reply_cmd = format '--input "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_path, response_time
+		reply_cmd = format '--tle "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_data, response_time
 		if geo != nil then reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo.lat, geo.lon end
 		r = goGoGTG(reply_cmd)[0]
 		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
@@ -117,11 +119,6 @@ def theresThatSat(satellite_name, tle_path, user_name, tweet_id, mention_time, r
 	reply_text = format "#USER# When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
 			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
 
-end
-
-# sets $catalog global variable to hash of satellite names -> TLE file paths
-def loadSatelliteCatalog(catalog_path='config/catalog.yml')
-	$catalog = YAML.load_file(catalog_path)
 end
 
 # returns Time object
@@ -172,7 +169,7 @@ def respondToSearches(acc_available, search_quota=20)
 			input_timestamp = parseSearchTimestamp(tweet[:created_at])
 			output_timestamp = Time.now.utc
 	
-			response = theresThatSat satellite_name, $catalog[satellite_name],
+			response = theresThatSat satellite_name, $catalog[:tle][satellite_name],
 					from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
 					parseTweetLocation(tweet)
 			
@@ -207,7 +204,7 @@ def respondToMentions(acc_available)
 		# ignore mentions that aren't actually direct @replies.
 		if !tweet[:text].match(/^@WheresThatSat/i) then next end
 		
-		$catalog.keys.each do |satellite_name|
+		$catalog[:tle].keys.each do |satellite_name|
 			
 			# match hyphenated or non-hyphenated forms of satellite_name
 			satellite_name_pattern = satellite_name.gsub(/(?: |-)/, "[ -]");
@@ -235,7 +232,7 @@ def respondToMentions(acc_available)
 					end
 				end
 		
-				response = theresThatSat satellite_name, $catalog[satellite_name],
+				response = theresThatSat satellite_name, $catalog[:tle][satellite_name],
 						from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
 						parseTweetLocation(tweet)
 				
@@ -283,6 +280,17 @@ def writeAPICallCount(acc)
 	return intervals.inject(0) {|sum, value| sum + value}
 end
 
+
+def loadSatelliteCatalog(catalog_path='config/catalog.yml')
+	$catalog = WTS.load_catalog(catalog_path)
+	# the alias table maps alternate names to satellite names as they appear in catalog
+	# resolve these aliases by creating new catalog entries with the alias name and source content
+	$catalog[:alias].each do |aliasName, catalogName|
+		if $catalog[:tle].include?(catalogName)
+			$catalog[:tle][aliasName] = $catalog[:tle][catalogName]
+		end
+	end
+end
 
 loadSatelliteCatalog()
 

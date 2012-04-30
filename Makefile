@@ -13,6 +13,7 @@ DEPLOY_DIR = /Users/anoved/Documents/WheresThatSatBot
 update:
 	$(CP) UpdateCatalog.rb $(DEPLOY_DIR)
 	$(CP) WheresThatSat.rb $(DEPLOY_DIR)
+	$(CP) wtsutil.rb $(DEPLOY_DIR)
 
 # Called once to create a deployment directory
 # (creates directories and installs gtg and bot config files)
@@ -20,7 +21,6 @@ deploy:
 	# create directories
 	$(MKDIR) -p $(DEPLOY_DIR)
 	$(MKDIR) -p $(DEPLOY_DIR)/config
-	$(MKDIR) -p $(DEPLOY_DIR)/tle
 	# install default config files
 	$(CP) default-config/WheresThatSat.yml $(DEPLOY_DIR)
 	$(CP) default-config/intervals.yml $(DEPLOY_DIR)/config
@@ -31,10 +31,10 @@ deploy:
 	# install scripts
 	$(CP) UpdateCatalog.rb $(DEPLOY_DIR)
 	$(CP) WheresThatSat.rb $(DEPLOY_DIR)
+	$(CP) wtsutil.rb $(DEPLOY_DIR)
 
 # Make links to the deployment config and tle files and directories
 # in the development folder so that we can test-run with same setup.
 link:
 	$(LN) -s $(DEPLOY_DIR)/config config
-	$(LN) -s $(DEPLOY_DIR)/tle tle
 	$(LN) -s $(DEPLOY_DIR)/WheresThatSat.yml WheresThatSat.yml
