@@ -195,18 +195,21 @@ function FormatVisibilityCaption(info) {
 	// technically, it may still be light out if solarelev < 0;
 	// sunset/twilight lasts until solarelev < -6 or so
 	if (illumination === 0 && elevation > 0 && solarelev < 0) {
-		if (info.future) caption += '<p>' + info.satelliteName + ' will <em>potentially</em> be visible from the observer location at this time ';
-		else caption += '<p>' + info.satelliteName + ' was <em>potentially</em> visible from the observer location at this time ';
-		caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
+		caption += '<p>' + info.satelliteName;
+		if (info.future) caption += ' will <em>potentially</em> be';
+		else caption += ' was <em>potentially</em>';
+		caption +=  ' visible from the observer location at this time (elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
 	} else {
 		var waswillbe;
+		caption += '<p>' + info.satelliteName;
 		if (info.future) {
-			caption += '<p>' + info.satelliteName + ' will probably <em>not</em> be visible from the observer location at this time. (';
+			caption += ' will probably <em>not</em> be';
 			waswillbe = 'will be';
 		} else {
-			caption += '<p>' + info.satelliteName + ' was probably <em>not</em> visible from the observer location at this time. (';
+			caption += '<p>' + info.satelliteName + ' was probably <em>not</em>';
 			waswillbe = 'was';
 		}
+		caption += ' visible from the observer location at this time. (';
 		var reasons = [];
 		if (illumination !== 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
 		if (elevation <= 0) reasons.push('It ' + waswillbe + ' below the horizon.');
