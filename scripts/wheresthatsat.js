@@ -171,6 +171,54 @@ function SetupMarkerPanelHighlights(marker, marker_content, panel) {
 
 //
 // Parameters:
+//   info:
+//     illumination
+//     elevation
+//     azimuth
+//     solarelev
+//     future (boolean)
+//     satelliteName
+//
+// Returns:
+//   caption string describing visibility from observer
+// 
+function FormatVisibilityCaption(info) {
+
+	var caption = '';
+
+	// Parse the additional observer-related information
+	var illumination = parseInt(info.illumination, 10);
+	var elevation = parseFloat(info.elevation);
+	var azimuth = parseFloat(info.azimuth);
+	var solarelev = parseFloat(info.solarelev);
+	
+	// technically, it may still be light out if solarelev < 0;
+	// sunset/twilight lasts until solarelev < -6 or so
+	if (illumination === 0 && elevation > 0 && solarelev < 0) {
+		if (info.future) caption += '<p>' + info.satelliteName + ' will <em>potentially</em> be visible from the observer location at this time ';
+		else caption += '<p>' + info.satelliteName + ' was <em>potentially</em> visible from the observer location at this time ';
+		caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
+	} else {
+		var waswillbe;
+		if (info.future) {
+			caption += '<p>' + info.satelliteName + ' will probably <em>not</em> be visible from the observer location at this time. (';
+			waswillbe = 'will be';
+		} else {
+			caption += '<p>' + info.satelliteName + ' was probably <em>not</em> visible from the observer location at this time. (';
+			waswillbe = 'was';
+		}
+		var reasons = [];
+		if (illumination !== 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
+		if (elevation <= 0) reasons.push('It ' + waswillbe + ' below the horizon.');
+		if (solarelev >= 0) reasons.push('The sun ' + waswillbe + ' above the horizon.');
+		caption += reasons.join(' ') + ')</p>';
+	}
+	
+	return caption;
+}
+
+//
+// Parameters:
 //   too many
 //
 // Results:
@@ -222,34 +270,13 @@ function MarkPlace(map, q, altitude_arg, heading_arg, speed_arg,
 	
 	// If observer information is available, append potential visibility note to caption
 	if (q.exists(illumination_arg) && q.exists(elevation_arg) && q.exists(azimuth_arg) && q.exists(solarelev_arg)) {
-		
-		// Parse the additional observer-related information
-		var illumination = parseInt(q.value(illumination_arg), 10);
-		var elevation = parseFloat(q.value(elevation_arg));
-		var azimuth = parseFloat(q.value(azimuth_arg));
-		var solarelev = parseFloat(q.value(solarelev_arg));
-		
-		// technically, it may still be light out if solarelev < 0;
-		// sunset/twilight lasts until solarelev < -6 or so
-		if (illumination === 0 && elevation > 0 && solarelev < 0) {
-			if (future) caption += '<p>' + satellite_name + ' will <em>potentially</em> be visible from the observer location at this time ';
-			else caption += '<p>' + satellite_name + ' was <em>potentially</em> visible from the observer location at this time ';
-			caption +=  '(elevation: ' + elevation + '&deg;, azimuth ' + azimuth + '&deg).</p>';
-		} else {
-			var waswillbe;
-			if (future) {
-				caption += '<p>' + satellite_name + ' will probably <em>not</em> be visible from the observer location at this time. (';
-				waswillbe = 'will be';
-			} else {
-				caption += '<p>' + satellite_name + ' was probably <em>not</em> visible from the observer location at this time. (';
-				waswillbe = 'was';
-			}
-			var reasons = [];
-			if (illumination !== 0) reasons.push('It ' + waswillbe + ' in the earth\'s shadow.');
-			if (elevation <= 0) reasons.push('It ' + waswillbe + ' below the horizon.');
-			if (solarelev >= 0) reasons.push('The sun ' + waswillbe + ' above the horizon.');
-			caption += reasons.join(' ') + ')</p>';
-		}
+		caption += FormatVisibilityCaption({
+				illumination: q.value(illumination_arg),
+				elevation: q.value(elevation_arg),
+				azimuth: q.value(azimuth_arg),
+				solarelev: q.value(solarelev_arg),
+				future: future,
+				satelliteName: satellite_name});
 	}
 	
 	// Display the caption in the sidebar
