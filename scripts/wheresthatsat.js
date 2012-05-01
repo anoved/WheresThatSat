@@ -534,7 +534,7 @@ function initialize() {
 		}
 		
 		// Prompt user to ask about this satellite again
-		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Ask @WheresThatSat about this satellite again&hellip;</a></p>';
+		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Ask about this satellite again&hellip;</a></p>';
 		CreateInfoPanel(document, rightpanel, askcaption, 'ask');
 		
 		// View at other sites
