@@ -17,14 +17,23 @@ require 'cgi'
 require 'geocoder'
 require './wtsutil'
 
+#
+# Represents observer location (name and coordinates)
+#
 class WTSObserver
 	attr_accessor :lat
 	attr_accessor :lon
 	attr_accessor :name
 end
 
-# returns nil if no location can be parsed
-# otherwise returns a WTSObserver object
+#
+# Parameters:
+#	tweet object
+#
+# Returns:
+#	WTSObserver object representing location associated with tweet,
+#	or nil if no location can be parsed from text, geo, or place
+#
 def parseTweetPlaceTag(tweet)
 	geo = nil
 	if (tweet[:text].match(/\#place "([^"]+)"/i))
@@ -56,7 +65,15 @@ def parseTweetPlaceTag(tweet)
 	return geo
 end
 
-# considering using ParseDate and DateTime to accept specific timestamps, with zone
+#
+# Parameters:
+#	tweetText, text to search for time tag
+#	tweetTimestamp, Time of source tweet (basis for relative time offsets)
+#
+# Returns:
+#	[tweetTimestamp, false] if no time tag can be parsed
+#	[tagTimestamp, true] if time tag can be parsed
+#
 def parseTweetTimeTag(tweetText, tweetTimestamp)
 	if (tweetText.match(/\#time "([^"]+)"/i))
 		description = $1
@@ -79,6 +96,14 @@ def parseTweetTimeTag(tweetText, tweetTimestamp)
 	return tweetTimestamp, false
 end
 
+#
+# Parameters:
+#	gtg_args, string containing command line for Ground Track Generator
+#		("--format csv" is assumed to be present in gtg_args)
+#
+# Returns:
+#	array of gtg output records; each record is comprised of array of fields
+#
 def goGoGTG(gtg_args)
 	gtg_cmd = './gtg ' + gtg_args
 	gtg_pipe = IO.popen(gtg_cmd)
@@ -87,19 +112,30 @@ def goGoGTG(gtg_args)
 	return gtg_data.split("\n").collect {|record| record.split(',')}
 end
 
+#
+# Parameters:
+#	tleData, string containing two-line element set
+#
+# Returns:
+#	string containing satellite number
+#
 def getTLEIdentifier(tleData)
 	return tleData[2..6]
 end
 
 #
-# satellite_name, display name of satellite
-# tle_data, two-line element set of satellite
-# user_name, input twitter username
-# tweet_id, input tweet_id
-# mention_time - integer unix timestamp of focal time
-# response_time - integer unix timestamp of reply time.
-# explicit_mention_time - true if user specified mention time
-# is_geo, boolean whether observer location is defined (true if yes)
+# Parameters:
+#	satellite_name, display name of satellite
+#	tle_data, two-line element set of satellite
+#	user_name, input twitter username
+#	tweet_id, input tweet_id
+#	mention_time - integer unix timestamp of focal time
+#	response_time - integer unix timestamp of reply time.
+#	explicit_mention_time - true if user specified mention time
+#	is_geo, boolean whether observer location is defined (true if yes)
+#
+# Returns:
+#	string containing tweet response text (including map link)
 #
 def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo)
 	
@@ -142,22 +178,49 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 
 end
 
-# returns Time object
-# example search created_at timestamp: Fri, 13 Apr 2012 13:06:22 +0000
+#
+# Parameters:
+#	created_at, string representation of search result time: Fri, 13 Apr 2012 13:06:22 +0000
+#
+# Returns:
+#	UTC Time object
+#
 def parseSearchTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[4].split(':')
 	return Time.utc(parts[3], parts[2], parts[1], hms[0], hms[1], hms[2], 0)
 end
 
-# returns Time object
-# example reply created_at timestamp: Fri Apr 13 13:06:22 +0000 2012
+#
+# Parameters:
+#	created_at, string representation of reply/mention time: Fri Apr 13 13:06:22 +0000 2012
+#
+# Returns:
+#	UTC Time object
+#
 def parseReplyTimestamp(created_at)
 	parts = created_at.split(' ')
 	hms = parts[3].split(':')
 	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
 end
 
+#
+# NOTE: currently responds to first recognized satellite name found in tweet,
+# and ignores any others. Preferred behavior is to reply to all known references.
+#
+# Parameters:
+#	tweetText, text of tweet
+#	tweetId, id of tweet
+#	tweetTimestamp, time of tweet
+#	userName, author of tweet
+#	location, WTSObserver/nil
+#	selectedSatellites, array of satellite names to respond to
+#		(if selectedSatellites is empty, respond to any satellite name in catalog)
+#
+# Returns:
+#	string containing tweet response text (including map link),
+#	or nil if no satellite name is recognized in tweetText
+#
 def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
 	
 	if selectedSatellites.empty?
@@ -185,11 +248,19 @@ def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, sel
 end
 
 
-# parameter acc_available: number of API calls available
-# search_quota is a cutoff for how many search-related api calls to perform,
-#  regardless of how many calls are available. will not perform more than min
-#  of search_quota and acc_available.
-# returns number of API calls consumed (acc)
+#
+# Parameters:
+#	acc_available, number of API calls available
+#	search_quota, cutoff for how many search-related api calls to perform,
+#		regardless of how many calls are available. will not perform more
+#		than min of search_quota and acc_available.
+#
+# Results:
+#	posts replies to search results
+#
+# Returns:
+#	number of API calls consumed (acc)
+#
 def respondToSearches(acc_available, search_quota=20)
 
 	if (acc_available < search_quota) then search_quota = acc_available end
@@ -234,8 +305,16 @@ def respondToSearches(acc_available, search_quota=20)
 	return acc
 end
 
-# parameter acc_available: number of API calls available
-# returns number of API calls consumed (acc)
+#
+# Parameters:
+#	acc_available, number of API calls available
+#
+# Results:
+#	posts replies to mentions
+#
+# Returns:
+#	number of API calls consumed (acc)
+#
 def respondToMentions(acc_available)
 	if (acc_available == 0)
 		puts STDERR, "Not responding to mentions: rate limit"
@@ -272,15 +351,26 @@ def respondToMentions(acc_available)
 	return acc
 end
 
-# returns current API call count (cumulative for the past hour, or whatever
-# period is represented by the set of per-interval call counts in :intervals)
+#
+# Returns:
+#	current API call count (cumulative for the past hour, or whatever
+#	period is represented by the set of per-interval call counts in :intervals)
+#
 def readAPICallCount()
 	acc_intervals = YAML.load_file("config/intervals.yml")[:intervals]
 	return acc_intervals.inject(0) {|sum, value| sum + value}
 end
 
-# writes current API call count; updates :intervals with current interval's acc
-# and drops any old interval counts. returns final call count.
+#
+# Parameters:
+#	acc, call count for this run
+#
+# Results:
+#	updates interval file (pushes acc into the record and discards oldest interval count)
+#
+# Returns:
+#	final call count
+#
 def writeAPICallCount(acc)
 	
 	intervals = YAML.load_file("config/intervals.yml")[:intervals]
@@ -297,7 +387,16 @@ def writeAPICallCount(acc)
 	return intervals.inject(0) {|sum, value| sum + value}
 end
 
-
+#
+# Parameters:
+#	catalog_path, path to satellite catalog file (generated by UpdateCatalog.rb)
+#
+# Results:
+#	$catalog is populated with [:tle] and [:alias] arrays
+#		:tle: "Canonical Satellite Name" => "TLE data"
+#		:alias: "Alternate Satellite Name" => "Canonical Satellite Name"
+#	:tle records for alias names are created with corresponding canonical TLE data
+#
 def loadSatelliteCatalog(catalog_path='config/catalog.yml')
 	$catalog = WTS.load_catalog(catalog_path)
 	# the alias table maps alternate names to satellite names as they appear in catalog
