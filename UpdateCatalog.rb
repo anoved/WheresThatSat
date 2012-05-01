@@ -130,7 +130,7 @@ end
 
 catalog, additions, removals = updateCatalog
 
-if ARGV.length > 0
+if (ARGV.length > 0) and (!additions.empty? or !removals.empty?)
 	catalogPagePath = Pathname.new(ARGV[0])
 	catalogPageDirectory = catalogPagePath.parent.to_s
 	catalogPageFilename = catalogPagePath.basename.to_s
