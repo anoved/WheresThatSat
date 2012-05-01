@@ -5,24 +5,18 @@ if (ARGV.length == 1 && ARGV[0] == 'test')
 	$testmode = true
 	puts "Test mode"
 end
+
 require 'rubygems'
 require 'chatterbot/dsl'
-
-#debug_mode
-#verbose
 
 # Ignore our own tweets to prevent a silly cycle of self-replies
 blacklist "wheresthatsat"
 
 require 'yaml'
-
-# for url encoding
 require 'cgi'
-
-require './wtsutil'
-
 require 'chronic'
 require 'geocoder'
+require './wtsutil'
 
 class WTSObserver
 	attr_accessor :lat
@@ -32,7 +26,7 @@ end
 
 # returns nil if no location can be parsed
 # otherwise returns a WTSObserver object
-def parseTweetLocation(tweet)
+def parseTweetPlaceTag(tweet)
 	geo = nil
 	if (tweet[:text].match(/\#place "([^"]+)"/i))
 		geoquery = $1
@@ -63,6 +57,19 @@ def parseTweetLocation(tweet)
 	return geo
 end
 
+def parseTweetTimeTag(tweetText, tweetTimestamp)
+	if (tweetText.match(/\#time "([^"]+)"/i))
+		# the :now parameter uses the [UTC] timestamp of the tweet as
+		# the basis for any relative time offsets, such as "hours from now"
+		# (only "n units ago/from now" descriptions are global-compatible)
+		specifiedTimestamp = Chronic.parse($1, :now => tweetTimestamp)
+		if specifiedTimestamp != nil
+			return specifiedTimestamp, true
+		end
+	end
+	return tweetTimestamp, false
+end
+
 def goGoGTG(gtg_args)
 	gtg_cmd = './gtg ' + gtg_args
 	gtg_pipe = IO.popen(gtg_cmd)
@@ -77,16 +84,17 @@ end
 # user_name, input twitter username
 # tweet_id, input tweet_id
 # mention_time - integer unix timestamp of focal time
-# response_time - integer unix timestamp of reply time. Suppress reply time marker if < 0.
+# response_time - integer unix timestamp of reply time.
+# explicit_mention_time - true if user specified mention time
 # is_geo, boolean whether observer location is defined (true if yes)
 #
-def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, geo)
+def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo)
 	
 	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id
 	
 	# trace
 	trace_start_time = mention_time - (4 * 60)
-	trace_end_time = (response_time < 0 ? mention_time : response_time) + (4 * 60)
+	trace_end_time = (explicit_mention_time ? mention_time : response_time) + (4 * 60)
 	url += format '&t1=%d&t2=%d', trace_start_time, trace_end_time
 	trace_cmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle_data, trace_start_time, trace_end_time
 	trace_data = goGoGTG(trace_cmd)
@@ -107,7 +115,7 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 	if geo != nil then url += format'&mi=%d&me=%.2f&mz=%.2f&mo=%.2f', m[6], m[7], m[8], m[9] end
 	
 	# response (none if response_time < 0)
-	if (response_time >= 0)
+	if not explicit_mention_time
 		reply_cmd = format '--tle "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle_data, response_time
 		if geo != nil then reply_cmd += format ' --observer %f %f --attributes shadow elevation azimuth solarelev', geo.lat, geo.lon end
 		r = goGoGTG(reply_cmd)[0]
@@ -137,6 +145,28 @@ def parseReplyTimestamp(created_at)
 	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
 end
 
+def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location)
+	$catalog[:tle].keys.each do |satelliteName|
+		
+		# match hyphenated or non-hyphenated forms of satellite_name
+		satelliteNamePattern = satelliteName.gsub(/(?: |-)/, "[ -]");
+		
+		if tweetText.match(/\b#{satelliteNamePattern}\b/i)
+			responseTimestamp = Time.now.utc
+			
+			# parseTweetPlaceTag is called by the caller, since it may need to
+			# access other tweet properties (such as geo or place) besides text
+			tweetTimestamp, hasTimeTag = parseTweetTimeTag(tweetText, tweetTimestamp)
+			
+			return theresThatSat(satelliteName, $catalog[:tle][satelliteName],
+					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
+					hasTimeTag, location)
+		end
+	end
+	return nil
+end
+
+
 # parameter acc_available: number of API calls available
 # search_quota is a cutoff for how many search-related api calls to perform,
 #  regardless of how many calls are available. will not perform more than min
@@ -145,46 +175,42 @@ end
 def respondToSearches(acc_available, search_quota=20)
 
 	if (acc_available < search_quota) then search_quota = acc_available end
-	
-	acc = 0
-	
+		
 	# load the list of satellite names to search for
 	satellite_queries = YAML.load_file('config/sat_searches.yml')
-	if satellite_queries == nil then return acc end
+	if satellite_queries == nil then return 0 end
 	
-	satellite_queries.each do |satellite_name|
-		
-		if (acc + 1 >= search_quota)
-			puts STDERR, format("Stopping search at %s: rate limit/quota", satellite_name)
-			return acc
-		end
-		acc += 1
-		
-		search(format('"%s"', satellite_name)) do |tweet|
-			
-			# skip any results that refer to us: they're handled as Mentions
-			if tweet[:text].match(/@WheresThatSat/i) then next end
-			
-			# time
-			input_timestamp = parseSearchTimestamp(tweet[:created_at])
-			output_timestamp = Time.now.utc
+	# assemble the list of names into a single OR query w/each name quoted
+	query_text = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
-			response = theresThatSat satellite_name, $catalog[:tle][satellite_name],
-					from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-					parseTweetLocation(tweet)
-			
-			if $testmode
-				puts response
-			else
-				if (acc + 1 >= search_quota)
-					puts STDERR, format("Not responding to search %s: rate limit/quota.", tweet[:id].to_s)
-					return acc
-				end
-				acc += 1
-				reply response, tweet
+	acc = 1
+	search(query_text) do |tweet|
+		
+		# skip any results that refer to us: they're handled as Mentions
+		if tweet[:text].match(/@WheresThatSat/i) then next end
+		
+		## give getTweetResponse our satellite_queries list to search
+		response = getTweetResponse(
+				tweet[:text], tweet[:id],	
+				parseSearchTimestamp(tweet[:created_at]),
+				from_user(tweet), parseTweetPlaceTag(tweet))
+		
+		# a nil response indicates no satellite was mentioned
+		# (more accurately - Twitter returned a match for our query, but we
+		# couldn't find any matches, indicating some matching discrepancy)
+		if response == nil then next end
+				
+		if $testmode
+			puts response
+		else
+			if (acc + 1 >= search_quota)
+				puts STDERR, format("Not responding to search %s: rate limit/quota.", tweet[:id].to_s)
+				return acc
 			end
-			
+			acc += 1
+			reply response, tweet
 		end
+		
 	end
 	
 	return acc
@@ -204,54 +230,27 @@ def respondToMentions(acc_available)
 		# ignore mentions that aren't actually direct @replies.
 		if !tweet[:text].match(/^@WheresThatSat/i) then next end
 		
-		$catalog[:tle].keys.each do |satellite_name|
-			
-			# match hyphenated or non-hyphenated forms of satellite_name
-			satellite_name_pattern = satellite_name.gsub(/(?: |-)/, "[ -]");
-			
-			if tweet[:text].match(/\b#{satellite_name_pattern}\b/i)
-				
-				# By default, plot ground track from mention time to our reply time.
-				input_timestamp = parseReplyTimestamp(tweet[:created_at])
-				output_timestamp = Time.now.utc
-				
-				# Don't respond to this tweet if it's too old (overriding even
-				# our bot interval - we don't want to render any huge ranges
-				# on the map, or try passing them through the URL parameters)
-				#if (output_timestamp - input_timestamp > (15 * 60))
-				#	next
-				#end
-				
-				if (tweet[:text].match(/\#time "([^"]+)"/i))
-					# the :now parameter uses the [UTC] timestamp of the tweet as
-					# the basis for any relative time offsets, such as "hours from now"
-					time_result = Chronic.parse($1, :now => input_timestamp)
-					if (time_result != nil)
-						input_timestamp = time_result
-						output_timestamp = -1
-					end
-				end
+		response = getTweetResponse(
+				tweet[:text], tweet[:id],
+				parseReplyTimestamp(tweet[:created_at]),
+				from_user(tweet), parseTweetPlaceTag(tweet))
 		
-				response = theresThatSat satellite_name, $catalog[:tle][satellite_name],
-						from_user(tweet), tweet[:id], input_timestamp.to_i, output_timestamp.to_i,
-						parseTweetLocation(tweet)
-				
-				if ($testmode)
-					# In test mode, just print the response for inspection.
-					puts response
-				else
-					# Otherwise, post the response in reply to the input Tweet.
-					if (acc + 1 >= acc_available)
-						puts STDERR, format("Not responding to mention %s or earlier: rate limit.", tweet[:id].to_s)
-						return acc
-					end
-					acc += 1
-					reply response, tweet
-				end
+		# a nil response indicates no satellite was mentioned
+		if response == nil then next end
+						
+		if ($testmode)
+			# In test mode, just print the response for inspection.
+			puts response
+		else
+			# Otherwise, post the response in reply to the input Tweet.
+			if (acc + 1 >= acc_available)
+				puts STDERR, format("Not responding to mention %s or earlier: rate limit.", tweet[:id].to_s)
+				return acc
 			end
+			acc += 1
+			reply response, tweet
 		end
 	end
-	
 	return acc
 end
 
