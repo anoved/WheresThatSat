@@ -247,23 +247,11 @@ def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, sel
 	return nil
 end
 
-
-#
-# Parameters:
-#	acc_available, number of API calls available
-#	search_quota, cutoff for how many search-related api calls to perform,
-#		regardless of how many calls are available. will not perform more
-#		than min of search_quota and acc_available.
 #
 # Results:
 #	posts replies to search results
 #
-# Returns:
-#	number of API calls consumed (acc)
-#
-def respondToSearches(acc_available, search_quota=20)
-
-	if (acc_available < search_quota) then search_quota = acc_available end
+def respondToSearches()
 		
 	# load the list of satellite names to search for
 	satellite_queries = YAML.load_file('config/sat_searches.yml')
@@ -272,7 +260,6 @@ def respondToSearches(acc_available, search_quota=20)
 	# assemble the list of names into a single OR query w/each name quoted
 	query_text = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
-	acc = 1
 	search(query_text) do |tweet|
 		
 		# skip any results that refer to us: they're handled as Mentions
@@ -292,35 +279,16 @@ def respondToSearches(acc_available, search_quota=20)
 		if $testmode
 			puts response
 		else
-			if (acc + 1 >= search_quota)
-				puts STDERR, format("Not responding to search %s: rate limit/quota.", tweet[:id].to_s)
-				return acc
-			end
-			acc += 1
 			reply response, tweet
 		end
-		
 	end
-	
-	return acc
 end
 
-#
-# Parameters:
-#	acc_available, number of API calls available
 #
 # Results:
 #	posts replies to mentions
 #
-# Returns:
-#	number of API calls consumed (acc)
-#
-def respondToMentions(acc_available)
-	if (acc_available == 0)
-		puts STDERR, "Not responding to mentions: rate limit"
-		return 0
-	end
-	acc = 1
+def respondToMentions()
 	replies do |tweet|
 		
 		# To avoid redundant replies to retweets/quotes of our own tweets,
@@ -340,51 +308,9 @@ def respondToMentions(acc_available)
 			puts response
 		else
 			# Otherwise, post the response in reply to the input Tweet.
-			if (acc + 1 >= acc_available)
-				puts STDERR, format("Not responding to mention %s or earlier: rate limit.", tweet[:id].to_s)
-				return acc
-			end
-			acc += 1
 			reply response, tweet
 		end
 	end
-	return acc
-end
-
-#
-# Returns:
-#	current API call count (cumulative for the past hour, or whatever
-#	period is represented by the set of per-interval call counts in :intervals)
-#
-def readAPICallCount()
-	acc_intervals = YAML.load_file("config/intervals.yml")[:intervals]
-	return acc_intervals.inject(0) {|sum, value| sum + value}
-end
-
-#
-# Parameters:
-#	acc, call count for this run
-#
-# Results:
-#	updates interval file (pushes acc into the record and discards oldest interval count)
-#
-# Returns:
-#	final call count
-#
-def writeAPICallCount(acc)
-	
-	intervals = YAML.load_file("config/intervals.yml")[:intervals]
-	
-	# drop all but the most recent five intervals from the list of intervals
-	# (assuming a tracking period of six intervals - 6 x 10 minutes = 1 hour)
-	while intervals.length > 5 do intervals.shift end
-	
-	# add the most recent count to the interval list
-	intervals.push acc
-	
-	File.open("config/intervals.yml", "w") {|file| YAML.dump({:intervals => intervals}, file)}
-	
-	return intervals.inject(0) {|sum, value| sum + value}
 end
 
 #
@@ -408,18 +334,6 @@ def loadSatelliteCatalog(catalog_path='config/catalog.yml')
 	end
 end
 
-loadSatelliteCatalog()
-
-ac_initial = readAPICallCount()
-ac_available = 150 - ac_initial
-ac_consumed = 0
-
-acc = respondToMentions(ac_available)
-ac_consumed += acc
-ac_available -= acc
-
-acc = respondToSearches(ac_available)
-ac_consumed += acc
-ac_available -= acc
-
-writeAPICallCount(ac_consumed)
+loadSatelliteCatalog
+respondToMentions
+respondToSearches
