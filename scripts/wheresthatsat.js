@@ -537,6 +537,12 @@ function initialize() {
 		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
 		CreateInfoPanel(document, rightpanel, askcaption, 'ask');
 		
+		// View at other sites
+		if (q.exists('si')) {
+			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '">View current position at NY2O&hellip;</a></p>';
+			CreateInfoPanel(document, rightpanel, otherCaption, 'other');
+		}
+		
 		// Display referrer link iff it's a t.co shortlink
 		if ((document.referrer !== '') && (document.referrer.split('/')[2] === 't.co')) {
 			var refcaption = '<p>Link to this map page: <a href="' + document.referrer + '">' + document.referrer + '</a></p>';
