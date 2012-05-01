@@ -69,7 +69,6 @@
 			<ul>
 				<li><a href="http://muffinlabs.com/chatterbot.html">Chatterbot</a> by Colin Mitchell</li>
 				<li><a href="http://www.rubygeocoder.com/">Ruby Geocoder</a> by Alex Reisner</li>
-				<li><a href="https://github.com/mojombo/chronic">Chronic</a> by Tom Preston-Werner</li>
 			</ul>
 			<p>Last but not least, @WheresThatSat uses <a href="https://github.com/anoved/Ground-Track-Generator">Ground Track Generator</a> to calculate satellite locations and attributes.</p>
 			</div>
@@ -127,8 +126,8 @@
 			<blockquote class="twitter-tweet"><p>@<a href="https://twitter.com/WheresThatSat">WheresThatSat</a> GeoEye 1 <a href="https://twitter.com/search/%2523place">#place</a> "Herndon, Virginia"</p>&mdash; Jim (@anoved) <a href="https://twitter.com/anoved/status/195247144603623425" data-datetime="2012-04-25T20:25:21+00:00">April 25, 2012</a></blockquote>
 			<p><a href="http://t.co/OsHDen8u">Here's the response</a>; GeoEye 1 was not visible from Herndon, VA.</p>
 			<p>@WheresThatSat understands many kinds of place descriptions, including street addresses, city names, and latitude/longitude coordinates. However, if the description is ambiguous, the intended location may be misinterpreted.</p>
-			<hr />
-			<p>A <code>#time</code> option tag is also available, but it is not yet fully compatible with different time zones. Relative time offsets such as <code>#time "4 hours from now"</code> or <code>#time "15 minutes ago"</code> should work wherever you are, but specific dates and times are currently interpreted in <acronym title="Eastern Daylight Time">EDT</acronym> (GMT/UTC -4 hours).</p>
+			<h3>Times</h3>
+			<p>You can use the <code>#time</code> tag to find out where a satellite was or will be at a specified time. Currently only relative times such as <code>#time "4 hours from now"</code> or <code>#time "15 minutes ago"</code> are understood. The exact format is <code>#time "NUMBER UNIT TENSE"</code>, where <code>NUMBER</code> is a number, <code>UNIT</code> is one of <code>seconds</code>, <code>minutes</code>, <code>hours</code>, or <code>days</code> (with or without the plural <code>s</code>), and <code>TENSE</code> is either <code>from now</code> or <code>ago</code>.</p>
 			</div>
 		
 		</div>
