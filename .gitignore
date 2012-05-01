@@ -2,9 +2,6 @@
 WheresThatSat.yml
 /config
 
-# Default bot config (contains API keys)
-/default-config/WheresThatSat.yml
-
 # Contains the schedule for running WheresThatSat and UpdateCatalog
 /wts_crontab
 
