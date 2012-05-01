@@ -534,12 +534,12 @@ function initialize() {
 		}
 		
 		// Prompt user to ask about this satellite again
-		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Where\'s this sat now?</a> <img src="images/tweet-reply.png" /></p>';
+		var askcaption = '<p><a href="https://twitter.com/intent/tweet?text=' + escape('@WheresThatSat ' + satelliteName) + '">Ask @WheresThatSat about this satellite again&hellip;</a></p>';
 		CreateInfoPanel(document, rightpanel, askcaption, 'ask');
 		
 		// View at other sites
 		if (q.exists('si')) {
-			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '">View current position at NY2O&hellip;</a></p>';
+			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '">View current position at NY2O.com&hellip;</a></p>';
 			CreateInfoPanel(document, rightpanel, otherCaption, 'other');
 		}
 		
