@@ -14,7 +14,6 @@ blacklist "wheresthatsat"
 
 require 'yaml'
 require 'cgi'
-require 'chronic'
 require 'geocoder'
 require './wtsutil'
 
@@ -57,14 +56,24 @@ def parseTweetPlaceTag(tweet)
 	return geo
 end
 
+# considering using ParseDate and DateTime to accept specific timestamps, with zone
 def parseTweetTimeTag(tweetText, tweetTimestamp)
 	if (tweetText.match(/\#time "([^"]+)"/i))
-		# the :now parameter uses the [UTC] timestamp of the tweet as
-		# the basis for any relative time offsets, such as "hours from now"
-		# (only "n units ago/from now" descriptions are global-compatible)
-		specifiedTimestamp = Chronic.parse($1, :now => tweetTimestamp)
-		if specifiedTimestamp != nil
-			return specifiedTimestamp, true
+		description = $1
+		if description.match(/([+-]?\d+(?:\.\d*)?) (second|minute|hour|day)s? (from now|ago)/i)
+			count = $1
+			unit = $2
+			direction = $3
+			offset = case unit
+				when 'second': count.to_f
+				when 'minute': count.to_f * 60.0
+				when 'hour': count.to_f * 60.0 * 60.0
+				when 'day': count.to_f * 24.0 * 60.0 * 60.0
+			end
+			if direction == "ago"
+				offset *= -1
+			end
+			return tweetTimestamp + offset, true
 		end
 	end
 	return tweetTimestamp, false
