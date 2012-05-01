@@ -173,8 +173,8 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 	end
 
 	# return complete reply text
-	reply_text = format "#USER# When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
-			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
+	reply_text = format "@%s When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
+			user_name, satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
 
 end
 
@@ -205,9 +205,6 @@ def parseReplyTimestamp(created_at)
 end
 
 #
-# NOTE: currently responds to first recognized satellite name found in tweet,
-# and ignores any others. Preferred behavior is to reply to all known references.
-#
 # Parameters:
 #	tweetText, text of tweet
 #	tweetId, id of tweet
@@ -218,14 +215,16 @@ end
 #		(if selectedSatellites is empty, respond to any satellite name in catalog)
 #
 # Returns:
-#	string containing tweet response text (including map link),
-#	or nil if no satellite name is recognized in tweetText
+#	number of responses posted to tweet. (Maybe be zero if no satellite names
+#		were matched, or more than one if there were multiple matches)
 #
-def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
+def respondToTweet(tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
 	
 	if selectedSatellites.empty?
 		selectedSatellites = $catalog[:tle].keys
 	end
+	
+	responseCount = 0
 	
 	selectedSatellites.each do |satelliteName|
 		
@@ -239,12 +238,21 @@ def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, sel
 			# access other tweet properties (such as geo or place) besides text
 			tweetTimestamp, hasTimeTag = parseTweetTimeTag(tweetText, tweetTimestamp)
 			
-			return theresThatSat(satelliteName, $catalog[:tle][satelliteName],
+			response = theresThatSat(satelliteName, $catalog[:tle][satelliteName],
 					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
 					hasTimeTag, location)
+			
+			if $testmode
+				puts response
+			else
+				tweet response, {:in_reply_to_status_id => tweetId}
+			end
+			
+			responseCount += 1
 		end
 	end
-	return nil
+	
+	return responseCount
 end
 
 #
@@ -265,22 +273,10 @@ def respondToSearches()
 		# skip any results that refer to us: they're handled as Mentions
 		if tweet[:text].match(/@WheresThatSat/i) then next end
 		
-		response = getTweetResponse(
-				tweet[:text], tweet[:id],	
+		respondToTweet(tweet[:text], tweet[:id],	
 				parseSearchTimestamp(tweet[:created_at]),
 				from_user(tweet), parseTweetPlaceTag(tweet),
 				satellite_queries)
-		
-		# a nil response indicates no satellite was mentioned
-		# (more accurately - Twitter returned a match for our query, but we
-		# couldn't find any matches, indicating some matching discrepancy)
-		if response == nil then next end
-				
-		if $testmode
-			puts response
-		else
-			reply response, tweet
-		end
 	end
 end
 
@@ -295,21 +291,9 @@ def respondToMentions()
 		# ignore mentions that aren't actually direct @replies.
 		if !tweet[:text].match(/^@WheresThatSat/i) then next end
 		
-		response = getTweetResponse(
-				tweet[:text], tweet[:id],
+		respondToTweet(tweet[:text], tweet[:id],
 				parseReplyTimestamp(tweet[:created_at]),
 				from_user(tweet), parseTweetPlaceTag(tweet))
-		
-		# a nil response indicates no satellite was mentioned
-		if response == nil then next end
-						
-		if ($testmode)
-			# In test mode, just print the response for inspection.
-			puts response
-		else
-			# Otherwise, post the response in reply to the input Tweet.
-			reply response, tweet
-		end
 	end
 end
 
