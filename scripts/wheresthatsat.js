@@ -539,7 +539,7 @@ function initialize() {
 		
 		// View at other sites
 		if (q.exists('si')) {
-			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '">View current position at NY2O.com&hellip;</a></p>';
+			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '" title="Real Time Satellite Tracking">View current position at N2YO.com&hellip;</a></p>';
 			CreateInfoPanel(document, rightpanel, otherCaption, 'other');
 		}
 		
