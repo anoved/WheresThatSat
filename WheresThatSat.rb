@@ -145,8 +145,13 @@ def parseReplyTimestamp(created_at)
 	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
 end
 
-def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location)
-	$catalog[:tle].keys.each do |satelliteName|
+def getTweetResponse(tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
+	
+	if selectedSatellites.empty?
+		selectedSatellites = $catalog[:tle].keys
+	end
+	
+	selectedSatellites.each do |satelliteName|
 		
 		# match hyphenated or non-hyphenated forms of satellite_name
 		satelliteNamePattern = satelliteName.gsub(/(?: |-)/, "[ -]");
@@ -189,11 +194,11 @@ def respondToSearches(acc_available, search_quota=20)
 		# skip any results that refer to us: they're handled as Mentions
 		if tweet[:text].match(/@WheresThatSat/i) then next end
 		
-		## give getTweetResponse our satellite_queries list to search
 		response = getTweetResponse(
 				tweet[:text], tweet[:id],	
 				parseSearchTimestamp(tweet[:created_at]),
-				from_user(tweet), parseTweetPlaceTag(tweet))
+				from_user(tweet), parseTweetPlaceTag(tweet),
+				satellite_queries)
 		
 		# a nil response indicates no satellite was mentioned
 		# (more accurately - Twitter returned a match for our query, but we
