@@ -32,7 +32,7 @@ def formatSatelliteList(catalog)
 	return text
 end
 
-def getCatalogPageTemplate(templatePath='default-config/satellites_template.html')
+def getCatalogPageTemplate(templatePath='config/satellites_template.html')
 	templateFile = open templatePath
 	text = templateFile.read
 	templateFile.close
