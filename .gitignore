@@ -1,12 +1,3 @@
-# ignore config files
-WheresThatSat.yml
 /config
-
-# Contains the schedule for running WheresThatSat and UpdateCatalog
 /wts_crontab
-
-# Local copy of gtg
 /gtg
-
-# Reference copy of Chatterbot source code
-/chatterbot
