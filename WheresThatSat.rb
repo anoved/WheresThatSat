@@ -7,11 +7,7 @@ if (ARGV.length == 1 && ARGV[0] == 'test')
 end
 
 require 'rubygems'
-require 'chatterbot/dsl'
-
-# Ignore our own tweets to prevent a silly cycle of self-replies
-blacklist "wheresthatsat"
-
+require 'twitter'
 require 'yaml'
 require 'cgi'
 require 'geocoder'
@@ -36,7 +32,7 @@ end
 #
 def parseTweetPlaceTag(tweet)
 	geo = nil
-	if (tweet[:text].match(/\#place "([^"]+)"/i))
+	if (tweet.text.match(/\#place "([^"]+)"/i))
 		geoquery = $1
 		geocode = Geocoder.search(geoquery)
 		if (geocode.length > 0)
@@ -45,23 +41,25 @@ def parseTweetPlaceTag(tweet)
 			geo.lon = geocode[0].longitude
 			geo.name = "\"#{geoquery}\""
 		end
-	elsif (tweet[:geo] != nil)
-		geo = WTSObserver.new
-		geo.lat = tweet[:geo][:coordinates][0]
-		geo.lon = tweet[:geo][:coordinates][1]
-		user = from_user(tweet)
-		if (user[-1,1] == 's')
-			geo.name = "#{user}' coordinates"
-		else
-			geo.name = "#{user}'s coordinates"
-		end
-	elsif (tweet[:place] != nil)
-		geo = WTSObserver.new
-		bbox = tweet[:place][:bounding_box][:coordinates][0]
-		geo.lat = (bbox[0][1] + bbox[2][1]) / 2.0
-		geo.lon = (bbox[0][0] + bbox[2][0]) / 2.0
-		geo.name = tweet[:place][:name]
 	end
+## Need to adjust to suit twitter gem's geo/place format
+# 	elsif (tweet[:geo] != nil)
+# 		geo = WTSObserver.new
+# 		geo.lat = tweet[:geo][:coordinates][0]
+# 		geo.lon = tweet[:geo][:coordinates][1]
+# 		user = from_user(tweet)
+# 		if (user[-1,1] == 's')
+# 			geo.name = "#{user}' coordinates"
+# 		else
+# 			geo.name = "#{user}'s coordinates"
+# 		end
+# 	elsif (tweet[:place] != nil)
+# 		geo = WTSObserver.new
+# 		bbox = tweet[:place][:bounding_box][:coordinates][0]
+# 		geo.lat = (bbox[0][1] + bbox[2][1]) / 2.0
+# 		geo.lon = (bbox[0][0] + bbox[2][0]) / 2.0
+# 		geo.name = tweet[:place][:name]
+# 	end
 	return geo
 end
 
@@ -180,32 +178,7 @@ end
 
 #
 # Parameters:
-#	created_at, string representation of search result time: Fri, 13 Apr 2012 13:06:22 +0000
-#
-# Returns:
-#	UTC Time object
-#
-def parseSearchTimestamp(created_at)
-	parts = created_at.split(' ')
-	hms = parts[4].split(':')
-	return Time.utc(parts[3], parts[2], parts[1], hms[0], hms[1], hms[2], 0)
-end
-
-#
-# Parameters:
-#	created_at, string representation of reply/mention time: Fri Apr 13 13:06:22 +0000 2012
-#
-# Returns:
-#	UTC Time object
-#
-def parseReplyTimestamp(created_at)
-	parts = created_at.split(' ')
-	hms = parts[3].split(':')
-	return Time.utc(parts[5], parts[1], parts[2], hms[0], hms[1], hms[2], 0)
-end
-
-#
-# Parameters:
+#	twitter connection
 #	tweetText, text of tweet
 #	tweetId, id of tweet
 #	tweetTimestamp, time of tweet
@@ -218,7 +191,7 @@ end
 #	number of responses posted to tweet. (Maybe be zero if no satellite names
 #		were matched, or more than one if there were multiple matches)
 #
-def respondToTweet(tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
+def respondToTweet(twitter, tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
 	
 	if selectedSatellites.empty?
 		selectedSatellites = $catalog[:tle].keys
@@ -245,58 +218,85 @@ def respondToTweet(tweetText, tweetId, tweetTimestamp, userName, location, selec
 			if $testmode
 				puts response
 			else
-				tweet response, {:in_reply_to_status_id => tweetId}
+				twitter.update(response, :in_reply_to_status_id => tweetId)
 			end
 			
 			responseCount += 1
 		end
 	end
-	
 	return responseCount
 end
 
 #
+# Parameter:
+#	twitter connection
+#	since_id, only consider search results since this tweet
+#
 # Results:
 #	posts replies to search results
 #
-def respondToSearches()
-		
+# Returns:
+#	id of most recent search result
+#
+def respondToSearches(twitter, since_id)
+	max = since_id
+	
 	# load the list of satellite names to search for
 	satellite_queries = YAML.load_file('config/sat_searches.yml')
 	if satellite_queries == nil then return 0 end
 	
 	# assemble the list of names into a single OR query w/each name quoted
-	query_text = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
+	searchQuery = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
-	search(query_text) do |tweet|
+	searchResults = twitter.search(searchQuery, :since_id => since_id, :result_type => "recent")
+	
+	searchResults.each do |tweet|
+		if tweet.id > max then max = tweet.id end
+		if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
 		
 		# skip any results that refer to us: they're handled as Mentions
-		if tweet[:text].match(/@WheresThatSat/i) then next end
+		if tweet.text.match(/@WheresThatSat/i) then next end
 		
-		respondToTweet(tweet[:text], tweet[:id],	
-				parseSearchTimestamp(tweet[:created_at]),
-				from_user(tweet), parseTweetPlaceTag(tweet),
-				satellite_queries)
+		respondToTweet(twitter, tweet.text, tweet.id, tweet.created_at.utc,
+				tweetAuthor, parseTweetPlaceTag(tweet), satellite_queries)
 	end
+	return max
 end
 
+#
+# Parameter:
+#	twitter connection
+#	since_id, only consider mentions since this tweet
 #
 # Results:
 #	posts replies to mentions
 #
-def respondToMentions()
-	replies do |tweet|
-		
+# Returns:
+#	id of most recent mention
+#
+def respondToMentions(twitter, since_id)
+	max = since_id
+	mentions = twitter.mentions(:since_id => since_id)
+	mentions.each do |tweet|
+		if tweet.id > max then max = tweet.id end
+		if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
+
 		# To avoid redundant replies to retweets/quotes of our own tweets,
 		# ignore mentions that aren't actually direct @replies.
-		if !tweet[:text].match(/^@WheresThatSat/i) then next end
+		if !tweet.text.match(/^@WheresThatSat/i) then next end
 		
-		respondToTweet(tweet[:text], tweet[:id],
-				parseReplyTimestamp(tweet[:created_at]),
-				from_user(tweet), parseTweetPlaceTag(tweet))
+		respondToTweet(twitter, tweet.text, tweet.id, tweet.created_at.utc,
+				tweetAuthor, parseTweetPlaceTag(tweet))
 	end
+	return max
 end
 
+def getTweetAuthor(tweet)
+	return tweet.from_user || tweet.user.screen_name
+end
+
+#
+# NOTE: this doesn't really need to store catalog as a global variable
 #
 # Parameters:
 #	catalog_path, path to satellite catalog file (generated by UpdateCatalog.rb)
@@ -318,6 +318,33 @@ def loadSatelliteCatalog(catalog_path='config/catalog.yml')
 	end
 end
 
+#
+# Parameters:
+#	twitter_path, path to YAML file containing Twitter OAuth credentials
+#
+# Returns:
+#	authenticated Twitter object
+#
+def loginToTwitter(twitter_path='config/twitter.yml')
+	credentials = YAML.load_file(twitter_path)
+	return Twitter.new(
+			:oauth_token => credentials[:oauth_token],
+			:oauth_token_secret => credentials[:oauth_token_secret],
+			:consumer_key => credentials[:consumer_key],
+			:consumer_secret => credentials[:consumer_secret]);
+end
+
+def readSinceId(since_path='config/since.yml')
+	return YAML.load_file(since_path)
+end
+
+def writeSinceId(since_id, since_path='config/since.yml')
+	File.open(since_path, 'w') {|f| YAML.dump(since_id, f)}
+end
+
 loadSatelliteCatalog
-respondToMentions
-respondToSearches
+twitter = loginToTwitter
+since_id = readSinceId
+mentionLastId = respondToMentions(twitter, since_id)
+searchLastId = respondToSearches(twitter, since_id)
+writeSinceId([since_id, mentionLastId, searchLastId].max)
