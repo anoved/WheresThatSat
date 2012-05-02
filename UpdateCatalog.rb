@@ -1,10 +1,9 @@
 #!/usr/bin/env ruby
 
-require 'yaml'
 require 'open-uri'
-require './wtsutil.rb'
 require 'cgi'
 require 'pathname'
+require 'wtsutil'
 
 def formatAliasList(catalog)
 	text = "<ul>\n"
@@ -74,10 +73,8 @@ def getCatalogUpdateSummary(additions, removals)
 	return text
 end
 
-def updateCatalog()
-	
-	urls = YAML.load_file('config/tle_sources.yml');
-	
+def updateCatalog(config)
+
 	catalog = WTS.load_catalog
 	
 	# names of all satellites initially present in the catalog, plus
@@ -86,7 +83,7 @@ def updateCatalog()
 	additions = []
 	updates = []
 	
-	urls.each do |url|
+	config.tleIndexURLs.each do |url|
 		
 		# read the TLE index
 		index = open url
@@ -128,7 +125,8 @@ def updateCatalog()
 	return catalog, additions, removed
 end
 
-catalog, additions, removals = updateCatalog
+config = WTS::WTSConfig.new
+catalog, additions, removals = updateCatalog(config)
 
 if (ARGV.length > 0) and (!additions.empty? or !removals.empty?)
 	catalogPagePath = Pathname.new(ARGV[0])

@@ -8,10 +8,9 @@ end
 
 require 'rubygems'
 require 'twitter'
-require 'yaml'
 require 'cgi'
 require 'geocoder'
-require './wtsutil'
+require 'wtsutil'
 
 #
 # Represents observer location (name and coordinates)
@@ -123,6 +122,17 @@ end
 
 #
 # Parameters:
+#	tweet object
+#
+# Returns:
+#	username of tweet author
+#
+def getTweetAuthor(tweet)
+	return tweet.from_user || tweet.user.screen_name
+end
+
+#
+# Parameters:
 #	satellite_name, display name of satellite
 #	tle_data, two-line element set of satellite
 #	user_name, input twitter username
@@ -230,9 +240,9 @@ end
 
 #
 # Parameter:
+#	config object
 #	catalog object
 #	twitter connection
-#	since_id, only consider search results since this tweet
 #
 # Results:
 #	posts replies to search results
@@ -240,17 +250,17 @@ end
 # Returns:
 #	id of most recent search result
 #
-def respondToSearches(catalog, twitter, since_id)
-	max = since_id
+def respondToSearches(config, catalog, twitter)
+	max = config.sinceId
 	
 	# load the list of satellite names to search for
-	satellite_queries = YAML.load_file('config/sat_searches.yml')
+	satellite_queries = config.searchTerms
 	if satellite_queries == nil then return 0 end
 	
 	# assemble the list of names into a single OR query w/each name quoted
 	searchQuery = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
-	searchResults = twitter.search(searchQuery, :since_id => since_id, :result_type => "recent")
+	searchResults = twitter.search(searchQuery, :since_id => config.sinceId, :result_type => "recent")
 	
 	searchResults.each do |tweet|
 		if tweet.id > max then max = tweet.id end
@@ -267,9 +277,9 @@ end
 
 #
 # Parameter:
+#	config object
 #	catalog object
 #	twitter connection
-#	since_id, only consider mentions since this tweet
 #
 # Results:
 #	posts replies to mentions
@@ -277,9 +287,9 @@ end
 # Returns:
 #	id of most recent mention
 #
-def respondToMentions(catalog, twitter, since_id)
-	max = since_id
-	mentions = twitter.mentions(:since_id => since_id)
+def respondToMentions(config, catalog, twitter)
+	max = config.sinceId
+	mentions = twitter.mentions(:since_id => config.sinceId)
 	mentions.each do |tweet|
 		if tweet.id > max then max = tweet.id end
 		if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
@@ -294,59 +304,12 @@ def respondToMentions(catalog, twitter, since_id)
 	return max
 end
 
-#
-# Parameters:
-#	tweet object
-#
-# Returns:
-#	username of tweet author
-#
-def getTweetAuthor(tweet)
-	return tweet.from_user || tweet.user.screen_name
-end
-
-#
-# Parameters:
-#	twitter_path, path to YAML file containing Twitter OAuth credentials
-#
-# Returns:
-#	authenticated Twitter object
-#
-def loginToTwitter(twitter_path='config/twitter.yml')
-	credentials = YAML.load_file(twitter_path)
-	return Twitter.new(
-			:oauth_token => credentials[:oauth_token],
-			:oauth_token_secret => credentials[:oauth_token_secret],
-			:consumer_key => credentials[:consumer_key],
-			:consumer_secret => credentials[:consumer_secret]);
-end
-
-#
-# Parameters:
-#	since_path, path to YAML file containing id of last previously processed tweet
-#
-# Returns:
-#	id of last processed tweet
-#
-def readSinceId(since_path='config/since.yml')
-	return YAML.load_file(since_path)
-end
-
-#
-# Parameters:
-#	since_id, id of last tweet processed this run
-#	since_path, path to YAML file containing id of last previously processed tweet
-#
-# Results:
-#	updates since_path with current since_id
-#
-def writeSinceId(since_id, since_path='config/since.yml')
-	File.open(since_path, 'w') {|f| YAML.dump(since_id, f)}
-end
-
+config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
-twitter = loginToTwitter
-since_id = readSinceId
-mentionLastId = respondToMentions(catalog, twitter, since_id)
-searchLastId = respondToSearches(catalog, twitter, since_id)
-writeSinceId([since_id, mentionLastId, searchLastId].max)
+twitter = Twitter.new(config.login)
+
+mentionLastId = respondToMentions(config, catalog, twitter)
+searchLastId = respondToSearches(config, catalog, twitter)
+
+config.sinceId = [config.sinceId, mentionLastId, searchLastId].max
+config.save

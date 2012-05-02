@@ -68,4 +68,43 @@ module WTS
 		
 	end
 	
+	class WTSConfig
+		
+		def initialize(configPath='config/wts.yml')
+			@configPath = configPath
+			@config = YAML.load_file(configPath)
+		end
+				
+		def save
+			self.export(@configPath)
+		end
+		
+		def export(exportPath)
+			File.open(exportPath, 'w') do |file|
+				YAML.dump(@config, file)
+			end
+		end
+		
+		def searchTerms
+			@config[:searchTerms]
+		end
+		
+		def tleIndexURLs
+			@config[:tleIndexURLs]
+		end
+		
+		def login
+			@config[:authentication]
+		end
+		
+		def sinceId
+			@config[:lastProcessedTweetId]
+		end
+		
+		def sinceId=(id)
+			@config[:lastProcessedTweetId] = id
+		end
+		
+	end
+	
 end
