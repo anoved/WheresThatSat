@@ -40,25 +40,23 @@ def parseTweetPlaceTag(tweet)
 			geo.lon = geocode[0].longitude
 			geo.name = "\"#{geoquery}\""
 		end
+	elsif (tweet.geo != nil)
+		geo = WTSObserver.new
+		geo.lat = tweet.geo.latitude
+		geo.lon = tweet.geo.longitude
+		user = getTweetAuthor(tweet)
+		if (user[-1,1] == 's')
+			geo.name = "#{user}' coordinates"
+		else
+			geo.name = "#{user}'s coordinates"
+		end
+	elsif (tweet.place != nil)
+		geo = WTSObserver.new
+		bbox = tweet.place.bounding_box.coordinates[0]
+		geo.lat = (bbox[0][1] + bbox[2][1]) / 2.0
+		geo.lon = (bbox[0][0] + bbox[2][0]) / 2.0
+		geo.name = tweet.place.full_name
 	end
-## Need to adjust to suit twitter gem's geo/place format
-# 	elsif (tweet[:geo] != nil)
-# 		geo = WTSObserver.new
-# 		geo.lat = tweet[:geo][:coordinates][0]
-# 		geo.lon = tweet[:geo][:coordinates][1]
-# 		user = from_user(tweet)
-# 		if (user[-1,1] == 's')
-# 			geo.name = "#{user}' coordinates"
-# 		else
-# 			geo.name = "#{user}'s coordinates"
-# 		end
-# 	elsif (tweet[:place] != nil)
-# 		geo = WTSObserver.new
-# 		bbox = tweet[:place][:bounding_box][:coordinates][0]
-# 		geo.lat = (bbox[0][1] + bbox[2][1]) / 2.0
-# 		geo.lon = (bbox[0][0] + bbox[2][0]) / 2.0
-# 		geo.name = tweet[:place][:name]
-# 	end
 	return geo
 end
 
