@@ -262,15 +262,19 @@ def respondToSearches(config, catalog, twitter)
 	
 	searchResults = twitter.search(searchQuery, :since_id => config.sinceId, :result_type => "recent")
 	
-	searchResults.each do |tweet|
-		if tweet.id > max then max = tweet.id end
-		if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
-		
-		# skip any results that refer to us: they're handled as Mentions
-		if tweet.text.match(/@WheresThatSat/i) then next end
-		
-		respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-				tweetAuthor, parseTweetPlaceTag(tweet), satellite_queries)
+	begin
+		searchResults.each do |tweet|
+			if tweet.id > max then max = tweet.id end
+			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
+			
+			# skip any results that refer to us: they're handled as Mentions
+			if tweet.text.match(/@WheresThatSat/i) then next end
+			
+			respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
+					tweetAuthor, parseTweetPlaceTag(tweet), satellite_queries)
+		end
+	rescue Twitter::Error => e
+		puts STDERR, e
 	end
 	return max
 end
@@ -290,16 +294,20 @@ end
 def respondToMentions(config, catalog, twitter)
 	max = config.sinceId
 	mentions = twitter.mentions(:since_id => config.sinceId)
-	mentions.each do |tweet|
-		if tweet.id > max then max = tweet.id end
-		if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
-
-		# To avoid redundant replies to retweets/quotes of our own tweets,
-		# ignore mentions that aren't actually direct @replies.
-		if !tweet.text.match(/^@WheresThatSat/i) then next end
-		
-		respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-				tweetAuthor, parseTweetPlaceTag(tweet))
+	begin
+		mentions.each do |tweet|
+			if tweet.id > max then max = tweet.id end
+			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
+	
+			# To avoid redundant replies to retweets/quotes of our own tweets,
+			# ignore mentions that aren't actually direct @replies.
+			if !tweet.text.match(/^@WheresThatSat/i) then next end
+			
+			respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
+					tweetAuthor, parseTweetPlaceTag(tweet))
+		end
+	rescue Twitter::Error => e
+		puts STDERR, e
 	end
 	return max
 end
