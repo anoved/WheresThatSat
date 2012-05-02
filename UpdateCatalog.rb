@@ -4,6 +4,7 @@ require 'open-uri'
 require 'cgi'
 require 'pathname'
 require 'wtsutil'
+require 'twitter'
 
 def formatAliasList(catalog)
 	text = "<ul>\n"
@@ -73,6 +74,11 @@ def getCatalogUpdateSummary(additions, removals)
 	return text
 end
 
+def postSummaryToTwitter(config, summary)
+	t = Twitter.new(config.login)
+	t.update(summary + " http://wheresthatsat.com/satellites.html")
+end
+
 def updateCatalog(config)
 
 	catalog = WTS.load_catalog
@@ -139,4 +145,6 @@ if (ARGV.length > 0) and (!additions.empty? or !removals.empty?)
 	end
 	updateSummary = getCatalogUpdateSummary(additions, removals)
 	`cd "#{catalogPageDirectory}"; git commit -m "#{updateSummary}" "#{catalogPageFilename}"`
+	
+	postSummaryToTwitter(config, updateSummary)
 end
