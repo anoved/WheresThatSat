@@ -250,7 +250,7 @@ end
 #	id of most recent search result
 #
 def respondToSearches(config, catalog, twitter)
-	max = config.sinceId
+	max = config.searchesSinceId
 	
 	# load the list of satellite names to search for
 	satellite_queries = config.searchTerms
@@ -260,7 +260,7 @@ def respondToSearches(config, catalog, twitter)
 	searchQuery = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
 	begin
-		searchResults = twitter.search(searchQuery, :since_id => config.sinceId, :result_type => "recent")
+		searchResults = twitter.search(searchQuery, :since_id => config.searchesSinceId, :result_type => "recent")
 		searchResults.each do |tweet|
 			if tweet.id > max then max = tweet.id end
 			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
@@ -290,9 +290,9 @@ end
 #	id of most recent mention
 #
 def respondToMentions(config, catalog, twitter)
-	max = config.sinceId
+	max = config.mentionsSinceId
 	begin
-		mentions = twitter.mentions(:since_id => config.sinceId)
+		mentions = twitter.mentions(:since_id => config.mentionsSinceId)
 		mentions.each do |tweet|
 			if tweet.id > max then max = tweet.id end
 			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
@@ -353,21 +353,13 @@ config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
 twitter = Twitter.new(config.login)
 
-newSinceId = config.sinceId
-
 if options[:mentions]
-	lastId = respondToMentions(config, catalog, twitter)
-	if lastId > newSinceId
-		newSinceId = lastId
-	end
+	config.mentionsSinceId = respondToMentions(config, catalog, twitter)
 end
 
 if options[:searches]
-	lastId = respondToSearches(config, catalog, twitter)
-	if lastId > newSinceId
-		newSinceId = lastId
-	end
+	config.searchesSinceId = respondToSearches(config, catalog, twitter)
 end
 
-config.sinceId = newSinceId
+# update configuration with any changes.
 config.save

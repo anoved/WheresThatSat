@@ -97,12 +97,20 @@ module WTS
 			@config[:authentication]
 		end
 		
-		def sinceId
-			@config[:lastProcessedTweetId]
+		def searchesSinceId
+			@config[:searchesSinceId]
 		end
 		
-		def sinceId=(id)
-			@config[:lastProcessedTweetId] = id
+		def searchesSinceId=(id)
+			@config[:searchesSinceId] = id
+		end
+		
+		def mentionsSinceId
+			@config[:mentionsSinceId]
+		end
+		
+		def mentionsSinceId=(id)
+			@config[:mentionsSinceId] = id
 		end
 		
 	end
