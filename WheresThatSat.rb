@@ -7,6 +7,7 @@ if (ARGV.length == 1 && ARGV[0] == 'test')
 end
 
 require 'rubygems'
+require 'optparse'
 require 'twitter'
 require 'cgi'
 require 'geocoder'
@@ -309,12 +310,64 @@ def respondToMentions(config, catalog, twitter)
 	return max
 end
 
+def parseCommandLineOptions
+	
+	# default options
+	options = {
+		:mentions => false,
+		:searches => false,
+		:tweet => 0};
+	
+	op = OptionParser.new
+	
+	# configure the options
+	
+	op.on("--mentions") do |v|
+		options[:mentions] = true
+	end
+	
+	op.on("--searches") do |v|
+		options[:searches] = true
+	end
+	
+	op.on("--tweet ID", Integer) do |v|
+		if v <= 0
+			raise OptionParser::InvalidArgument, v
+		end
+		options[:tweet] = v
+	end
+	
+	# parse the options; report and quit if problems are encountered
+	begin
+		op.parse!
+	rescue OptionParser::ParseError => err
+		puts STDERR, err
+		exit 1
+	end
+	
+	return options
+end
+
+options = parseCommandLineOptions
 config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
 twitter = Twitter.new(config.login)
 
-mentionLastId = respondToMentions(config, catalog, twitter)
-searchLastId = respondToSearches(config, catalog, twitter)
+newSinceId = config.sinceId
 
-config.sinceId = [config.sinceId, mentionLastId, searchLastId].max
+if options[:mentions]
+	lastId = respondToMentions(config, catalog, twitter)
+	if lastId > newSinceId
+		newSinceId = lastId
+	end
+end
+
+if options[:searches]
+	lastId = respondToSearches(config, catalog, twitter)
+	if lastId > newSinceId
+		newSinceId = lastId
+	end
+end
+
+config.sinceId = newSinceId
 config.save
