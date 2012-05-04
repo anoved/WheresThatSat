@@ -113,6 +113,10 @@ module WTS
 			@config[:mentionsSinceId] = id
 		end
 		
+		def announcementTerms
+			@config[:announcementTerms]
+		end
+		
 	end
 	
 end

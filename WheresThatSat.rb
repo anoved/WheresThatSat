@@ -130,6 +130,43 @@ def getTweetAuthor(tweet)
 	return tweet.from_user || tweet.user.screen_name
 end
 
+def getDirectionOfHeading(heading)
+	if (heading >= 0 && heading < 5.62): "north"
+	elsif (heading >= 5.62 && heading < 16.87): "north by east"
+	elsif (heading >= 16.87 && heading < 28.12): "north-northeast"
+	elsif (heading >= 28.12 && heading < 39.37): "northeast by north"
+	elsif (heading >= 39.37 && heading < 50.62): "northeast"
+	elsif (heading >= 50.62 && heading < 61.87): "northeast by east"
+	elsif (heading >= 61.87 && heading < 73.12): "east-northeast"
+	elsif (heading >= 73.12 && heading < 84.37): "east by north"
+	elsif (heading >= 84.37 && heading < 95.62): "east"
+	elsif (heading >= 95.62 && heading < 106.87): "east by south"
+	elsif (heading >= 106.87 && heading < 118.12): "east-southeast"
+	elsif (heading >= 118.12 && heading < 129.37): "southeast by east"
+	elsif (heading >= 129.37 && heading < 140.62): "southeast"
+	elsif (heading >= 140.62 && heading < 151.87): "southeast by south"
+	elsif (heading >= 151.87 && heading < 163.12): "south-southeast"
+	elsif (heading >= 163.12 && heading < 174.37): "south by east"
+	elsif (heading >= 174.37 && heading < 185.62): "south"
+	elsif (heading >= 185.62 && heading < 196.87): "south by west"
+	elsif (heading >= 196.87 && heading < 208.12): "south-southwest"
+	elsif (heading >= 208.12 && heading < 219.37): "southwest by south"
+	elsif (heading >= 219.37 && heading < 230.62): "southwest"
+	elsif (heading >= 230.62 && heading < 241.87): "southwest by west"
+	elsif (heading >= 241.87 && heading < 253.12): "west-southwest"
+	elsif (heading >= 253.12 && heading < 264.37): "west by south"
+	elsif (heading >= 264.37 && heading < 275.62): "west"
+	elsif (heading >= 275.62 && heading < 286.87): "west by north"
+	elsif (heading >= 286.87 && heading < 298.12): "west-northwest"
+	elsif (heading >= 298.12 && heading < 309.37): "northwest by west"
+	elsif (heading >= 309.37 && heading < 320.62): "northwest"
+	elsif (heading >= 320.62 && heading < 331.87): "northwest by north"
+	elsif (heading >= 331.87 && heading < 343.12): "north-northwest"
+	elsif (heading >= 343.12 && heading < 354.37): "north by west"
+	elsif (heading >= 354.37 && heading <= 360): "north"
+	end
+end
+
 #
 # Parameters:
 #	satellite_name, display name of satellite
@@ -183,6 +220,44 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 	reply_text = format "@%s When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
 			user_name, satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
 
+end
+
+#
+# This method is a special case of theresThatSat intended for use by
+# WheresThatSat reports - status updates that are not replies.
+#
+# Parameters:
+#	sat, display name of satellite
+#	tle, two-line element set of satellite
+#	timestamp, integer unix timestamp
+#
+# Returns:
+#	string containing tweet response text (including map link)
+#
+def heresThisSat(sat, tle, timestamp)
+	
+	# no username or tweet id (for announcements, although appropriate for --tweet...)
+	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=WheresThatSat&ut=0&si=%s', CGI.escape(sat), CGI.escape(getTLEIdentifier(tle))
+
+	# trace
+	startTime = timestamp - (5 * 60)
+	endTime = timestamp + (5 * 60)
+	url += format '&t1=%d&t2=%d', startTime, endTime
+	traceCmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle, startTime, endTime
+	traceData = goGoGTG(traceCmd)
+	traceData.each do |point|
+		url += format '&ll=%.4f,%.4f', point[1], point[2]
+	end
+	
+	# marker
+	markerCmd = format '--tle "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle, timestamp
+	
+	m = goGoGTG(markerCmd)[0]
+	mlat = m[1].to_f
+	mlon = m[2].to_f
+	url += format '&ml=%.4f,%.4f&ma=%.2f&ms=%.2f&mh=%.2f&mt=%d', mlat, mlon, m[3].to_f, m[4].to_f, m[5].to_f, timestamp
+	
+	format "Right now, %s is moving %s at %.2f km/s, %.2f km above %.4f%s %.4f%s. Here's a map: %s", sat, getDirectionOfHeading(m[5].to_f), m[4].to_f, m[3].to_f, mlat.abs, mlat >= 0 ? "N" : "S", mlon.abs, mlon >= 0 ? "E" : "W", url
 end
 
 #
@@ -331,10 +406,55 @@ def respondToTweet(config, catalog, twitter, tweetId)
 	end
 end
 
+#
+# Parameters:
+#	config object
+#	catalog object
+#	twitter connection
+#
+# Results:
+#	random satellite location report is posted to Twitter
+#
+def postRandomReport(config, catalog, twitter)
+	terms = config.announcementTerms
+	return if terms.empty?
+	
+	# note terms must currently be defined exactly as listed in catalog;
+	# making this lookup case/hyphen insensitive would be convenient
+	sat = terms[rand(terms.length)]
+	
+	postReport(config, catalog, twitter, sat)
+end
+
+#
+# Parameters:
+#	config object
+#	catalog object
+#	twitter connection
+#	name of satellite to report
+#
+# Results:
+#	satellite location report posted to Twitter
+#
+def postReport(config, catalog, twitter, satelliteName)
+	return if not catalog.include? satelliteName
+	report = heresThisSat(satelliteName, catalog[satelliteName], Time.now.utc.to_i)
+	begin
+		twitter.update(report)
+	rescue Twitter::Error => e
+		puts STDERR, e
+	end
+end
+
+#
+# Returns:
+#	hash of options indicating which actions WheresThatSat should perform
+#
 def parseCommandLineOptions
 	
 	# default options
 	options = {
+		:report => false,
 		:mentions => false,
 		:searches => false,
 		:tweet => 0};
@@ -342,6 +462,10 @@ def parseCommandLineOptions
 	op = OptionParser.new
 	
 	# configure the options
+	
+	op.on("--report") do |v|
+		options[:report] = true
+	end
 	
 	op.on("--mentions") do |v|
 		options[:mentions] = true
@@ -373,6 +497,10 @@ options = parseCommandLineOptions
 config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
 twitter = Twitter.new(config.login)
+
+if options[:report]
+	postRandomReport(config, catalog, twitter)
+end
 
 if options[:mentions]
 	config.mentionsSinceId = respondToMentions(config, catalog, twitter)
