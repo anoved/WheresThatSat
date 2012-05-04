@@ -428,7 +428,6 @@ function initialize() {
 		var traceExtent = PlotGroundTrack(map, q.values('ll'));
 
 		// Assemble and display ground track description
-		var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 		var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
 		var caption = '<p>The green line depicts the ground track of <a href="' + searchlink + '">' + satelliteName + '</a> from ' + FormatTimestamp(traceStartTime) + ' to ' + FormatTimestamp(traceEndTime) + '.</p>';
 		CreateInfoPanel(document, rightpanel, caption, 'trace');
@@ -479,14 +478,23 @@ function initialize() {
 			var timestamp = new Date(parseInt(q.value('mt'), 10) * 1000);
 			var intro = '';
 			var future = false;
+			var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 			if (no_response_marker) {
-				intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
+				if (userName == "WheresThatSat") {
+					intro = '<a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it';
+				} else {
+					intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it';
+				}
 				if (timestamp > Date.now()) {
 					intro += 'will be';
 					future = true;
 				} else intro += 'was';
 			} else {
-				intro = 'When you <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
+				if (userName == 'WheresThatSat') {
+					intro = 'When <a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
+				} else {
+					intro = 'When you <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
+				}
 			}
 			
 			// Fling a bunch of parameters at the map and see what sticks!
