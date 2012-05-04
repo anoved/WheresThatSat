@@ -269,6 +269,7 @@ end
 #	tweetTimestamp, time of tweet
 #	userName, author of tweet
 #	location, WTSObserver/nil
+#	suppressReplyMarker, 
 #	selectedSatellites, array of satellite names to respond to
 #		(if selectedSatellites is empty, respond to any satellite name in catalog)
 #
@@ -276,7 +277,7 @@ end
 #	number of responses posted to tweet. (Maybe be zero if no satellite names
 #		were matched, or more than one if there were multiple matches)
 #
-def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
+def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, suppressReplyMarker, selectedSatellites=[])
 	
 	if selectedSatellites.empty?
 		selectedSatellites = catalog.entries
@@ -295,6 +296,10 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 			# parseTweetPlaceTag is called by the caller, since it may need to
 			# access other tweet properties (such as geo or place) besides text
 			tweetTimestamp, hasTimeTag = parseTweetTimeTag(tweetText, tweetTimestamp)
+			
+			if suppressReplyMarker
+				hasTimeTag = true
+			end
 			
 			response = theresThatSat(satelliteName, catalog[satelliteName],
 					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
@@ -344,7 +349,7 @@ def respondToSearches(config, catalog, twitter)
 			if tweet.text.match(/@WheresThatSat/i) then next end
 			
 			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-					tweetAuthor, parseTweetPlaceTag(tweet), satellite_queries)
+					tweetAuthor, parseTweetPlaceTag(tweet), false, satellite_queries)
 		end
 	rescue Twitter::Error => e
 		puts STDERR, e
@@ -377,7 +382,7 @@ def respondToMentions(config, catalog, twitter)
 			if !tweet.text.match(/^@WheresThatSat/i) then next end
 			
 			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-					tweetAuthor, parseTweetPlaceTag(tweet))
+					tweetAuthor, parseTweetPlaceTag(tweet), false)
 		end
 	rescue Twitter::Error => e
 		puts STDERR, e
@@ -400,7 +405,7 @@ def respondToTweet(config, catalog, twitter, tweetId)
 		tweet = twitter.status(tweetId)
 		tweetAuthor = getTweetAuthor(tweet)
 		respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-				tweetAuthor, parseTweetPlaceTag(tweet))
+				tweetAuthor, parseTweetPlaceTag(tweet), true)
 	rescue Twitter::Error => e
 		puts STDERR, e
 	end
