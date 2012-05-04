@@ -481,9 +481,9 @@ function initialize() {
 			var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
 			if (no_response_marker) {
 				if (userName == "WheresThatSat") {
-					intro = '<a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it';
+					intro = '<a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
 				} else {
-					intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it';
+					intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
 				}
 				if (timestamp > Date.now()) {
 					intro += 'will be';
