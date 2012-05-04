@@ -258,9 +258,8 @@ def respondToSearches(config, catalog, twitter)
 	# assemble the list of names into a single OR query w/each name quoted
 	searchQuery = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
 	
-	searchResults = twitter.search(searchQuery, :since_id => config.sinceId, :result_type => "recent")
-	
 	begin
+		searchResults = twitter.search(searchQuery, :since_id => config.sinceId, :result_type => "recent")
 		searchResults.each do |tweet|
 			if tweet.id > max then max = tweet.id end
 			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
@@ -291,8 +290,8 @@ end
 #
 def respondToMentions(config, catalog, twitter)
 	max = config.sinceId
-	mentions = twitter.mentions(:since_id => config.sinceId)
 	begin
+		mentions = twitter.mentions(:since_id => config.sinceId)
 		mentions.each do |tweet|
 			if tweet.id > max then max = tweet.id end
 			if (tweetAuthor = getTweetAuthor(tweet)) == 'WheresThatSat' then next end
