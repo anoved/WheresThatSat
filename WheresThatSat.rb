@@ -201,7 +201,7 @@ end
 #	number of responses posted to tweet. (Maybe be zero if no satellite names
 #		were matched, or more than one if there were multiple matches)
 #
-def respondToTweet(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
+def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, selectedSatellites=[])
 	
 	if selectedSatellites.empty?
 		selectedSatellites = catalog.entries
@@ -268,7 +268,7 @@ def respondToSearches(config, catalog, twitter)
 			# skip any results that refer to us: they're handled as Mentions
 			if tweet.text.match(/@WheresThatSat/i) then next end
 			
-			respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
+			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
 					tweetAuthor, parseTweetPlaceTag(tweet), satellite_queries)
 		end
 	rescue Twitter::Error => e
@@ -301,13 +301,34 @@ def respondToMentions(config, catalog, twitter)
 			# ignore mentions that aren't actually direct @replies.
 			if !tweet.text.match(/^@WheresThatSat/i) then next end
 			
-			respondToTweet(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
+			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
 					tweetAuthor, parseTweetPlaceTag(tweet))
 		end
 	rescue Twitter::Error => e
 		puts STDERR, e
 	end
 	return max
+end
+
+#
+# Preferably, do not show reply-time location marker for these responses.
+# (Similar to #time queries and spontaneous "solo" location announcements.)
+#
+# Parameters:
+#	config object
+#	catalog object
+#	twitter connection
+#	tweetId of tweet to respond to
+#
+def respondToTweet(config, catalog, twitter, tweetId)
+	begin
+		tweet = twitter.status(tweetId)
+		tweetAuthor = getTweetAuthor(tweet)
+		respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
+				tweetAuthor, parseTweetPlaceTag(tweet))
+	rescue Twitter::Error => e
+		puts STDERR, e
+	end
 end
 
 def parseCommandLineOptions
@@ -359,6 +380,10 @@ end
 
 if options[:searches]
 	config.searchesSinceId = respondToSearches(config, catalog, twitter)
+end
+
+if options[:tweet] != 0
+	respondToTweet(config, catalog, twitter, options[:tweet])
 end
 
 # update configuration with any changes.
