@@ -1,15 +1,15 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
+require 'optparse'
 require 'open-uri'
 require 'cgi'
 require 'pathname'
 require 'wtsutil'
-require 'twitter'
 
 def formatAliasList(catalog)
 	text = "<ul>\n"
-	catalog[:alias].sort.each do |aliasName, canonicalName|
+	catalog.aliases.sort.each do |aliasName, canonicalName|
 		text += "<li>#{aliasName} &rarr; #{canonicalName}</li>\n"
 	end
 	text += "</ul>\n"
@@ -18,9 +18,9 @@ end
 
 def formatSatelliteList(catalog)
 	text = "<table><tr>\n<td><ul>"
-	perColumn = (catalog[:tle].keys.length / 3.0).ceil
+	perColumn = (catalog.tles.keys.length / 3.0).ceil
 	count = 0
-	catalog[:tle].keys.sort.each do |name|
+	catalog.tles.keys.sort.each do |name|
 		searchLink = format "http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=%s", CGI.escape(name)
 		text += "<li><a href=\"#{searchLink}\">#{name}</a></li>\n"
 		count += 1
@@ -59,7 +59,6 @@ def formatPhraseList(list)
 	end
 end
 
-# could be used for local logging as well as Twitter update announcements.
 def getCatalogUpdateSummary(additions, removals)
 	text = "Satellite catalog updated."
 	if not additions.empty?
@@ -75,18 +74,13 @@ def getCatalogUpdateSummary(additions, removals)
 	return text
 end
 
-def postSummaryToTwitter(config, summary)
-	t = Twitter.new(config.login)
-	t.update(summary + " http://wheresthatsat.com/satellites.html")
-end
-
 def updateCatalog(config)
 
-	catalog = WTS.load_catalog
+	catalog = WTS::WTSCatalog.new
 	
 	# names of all satellites initially present in the catalog, plus
 	# lists to keep track of those that will be added or updated
-	initial = catalog[:tle].keys
+	initial = catalog.entries
 	additions = []
 	updates = []
 	
@@ -108,44 +102,75 @@ def updateCatalog(config)
 			tleName.gsub!(/\(.+?\)/, "")
 			tleName.gsub!(/\[.+?\]/, "")
 			tleName.rstrip!
-			
-			if catalog[:tle].include?(tleName)
+
+			if catalog.include?(tleName)
 				updates.push(tleName)
 			else
 				additions.push(tleName)
 			end
 			
-			catalog[:tle][tleName] = tleText
+			catalog[tleName] = tleText
 			
 			line += 3
 			
 		end
-		
 	end
 	
 	# names of satellites to remove (present initially but no longer in indices)
 	removed = initial - (updates + additions)
-	removed.each {|oldKey| catalog[:tle].delete(oldKey)}
+	removed.each {|oldKey| catalog.delete(oldKey)}
 	
-	WTS.write_catalog(catalog)
+	catalog.save
 	
 	return catalog, additions, removed
 end
 
-config = WTS::WTSConfig.new
-catalog, additions, removals = updateCatalog(config)
-
-if (ARGV.length > 0) and (!additions.empty? or !removals.empty?)
-	catalogPagePath = Pathname.new(ARGV[0])
-	catalogPageDirectory = catalogPagePath.parent.to_s
-	catalogPageFilename = catalogPagePath.basename.to_s
+def parseCommandLineOptions
 	
-	catalogPageText = formatCatalogPage(catalog, getCatalogPageTemplate())
-	File.open(catalogPagePath, 'w') do |file|
-		file.write(catalogPageText)
+	options = {
+		:catalog => false,
+		:webpage => ''};
+	
+	op = OptionParser.new
+	
+	op.on("--catalog") do |v|
+		options[:catalog] = true
 	end
-	updateSummary = getCatalogUpdateSummary(additions, removals)
-	`cd "#{catalogPageDirectory}"; git commit -m "#{updateSummary}" "#{catalogPageFilename}"`
 	
-	postSummaryToTwitter(config, updateSummary)
+	op.on("--webpage PATH", String) do |v|
+		options[:webpage] = v
+	end
+	
+	begin
+		op.parse!
+	rescue OptionParser::ParseError => err
+		puts STDERR, err
+		exit 1
+	end
+	
+	return options
+	
 end
+
+options = parseCommandLineOptions
+config = WTS::WTSConfig.new
+
+# first we need a catalog
+if options[:catalog]
+	# update the catalog contents
+	catalog, additions, removals = updateCatalog(config)
+else
+	# use the current catalog
+	catalog = WTS::WTSCatalog.new
+	additions = []
+	removals = []
+end
+
+# now we have a catalog; update things that depend on it
+if options[:webpage] != ''
+	pageText = formatCatalogPage(catalog, getCatalogPageTemplate())
+	File.open(options[:webpage], 'w') do |file|
+		file.write(pageText)
+	end
+end
+

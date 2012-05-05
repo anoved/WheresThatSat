@@ -2,40 +2,48 @@ require 'yaml'
 
 module WTS
 		
-	def WTS.load_catalog(path='config/catalog.yml')
-		
-		if File.exists?(path)
-			catalog = YAML.load_file(path)
-		else
-			catalog = {}
-		end
-		
-		if not catalog.include? :alias
-			catalog[:alias] = {}
-		end
-		
-		if not catalog.include? :tle
-			catalog[:tle] = {}
-		end
-		
-		return catalog
-		
-	end
-	
-	def WTS.write_catalog(catalog, path='config/catalog.yml')
-		
-		File.open(path, 'w') do |file|
-			YAML.dump(catalog, file)
-		end
-		
-	end
-	
 	class WTSCatalog
 		
 		include Enumerable
 		
 		def initialize(catalogPath='config/catalog.yml')
-			@catalog = WTS.load_catalog(catalogPath)
+			@catalogPath = catalogPath
+			
+			if File.exists?(catalogPath)
+				@catalog = YAML.load_file(catalogPath)
+			else
+				@catalog = {}
+			end
+			
+			if not @catalog.include? :alias
+				@catalog[:alias] = {}
+			end
+			
+			if not @catalog.include? :tle
+				@catalog[:tle] = {}
+			end
+		
+		end
+		
+		# .aliases and .tles used only for generating satellite list web page,
+		# which could arguably be a method of this class, like .export...
+		
+		def aliases
+			@catalog[:alias]
+		end
+		
+		def tles
+			@catalog[:tle]
+		end
+		
+		def save
+			self.export(@catalogPath)
+		end
+		
+		def export(exportPath)
+			File.open(exportPath, 'w') do |file|
+				YAML.dump(@catalog, file)
+			end
 		end
 		
 		#
@@ -50,6 +58,47 @@ module WTS
 				@catalog[:tle][@catalog[:alias][key]]
 			else
 				@catalog[:tle][key]
+			end
+		end
+		
+		#
+		# Parameters:
+		#	key, which may be an alias name or a canonical name
+		#		(if the key does not exist, it is used as a new canonical name)
+		#	value, to be assigned to key
+		#
+		# Result:
+		#	updates or creates catalog key with value
+		#
+		# Returns:
+		#	assigned value
+		#
+		def []=(key, value)
+			if @catalog[:alias].has_key?(key)
+				# if the key exists as an alias, the value is assigned to
+				# the associated canonical name
+				@catalog[:tle][@catalog[:alias][key]] = value
+			else
+				# if the key exists only as a canonical name, or if it does
+				# not exist at all, the value is assigned to that canonical key
+				@catalog[:tle][key] = value
+			end
+		end
+		
+		#
+		# Parameters:
+		#	key, which is interpreted as a canonical name
+		#		(no facility is provided to programmatically delete aliases)
+		#
+		# Results:
+		#	deletes key-value pair from TLE hash, if present
+		#
+		# Returns:
+		#	value of deleted key, or nil if none
+		#
+		def delete(key)
+			if @catalog[:tle].has_key? key
+				@catalog[:tle].delete(key)
 			end
 		end
 		
