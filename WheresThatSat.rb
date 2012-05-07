@@ -339,7 +339,7 @@ def respondToSearches(config, catalog, twitter)
 	
 	# load the list of satellite names to search for
 	satellite_queries = config.searchTerms
-	if satellite_queries == nil then return 0 end
+	if satellite_queries == nil then return config.searchesSinceId end
 	
 	# assemble the list of names into a single OR query w/each name quoted
 	searchQuery = satellite_queries.map {|name| "\"#{name}\""}.join(' OR ')
