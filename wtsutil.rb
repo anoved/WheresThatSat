@@ -162,6 +162,14 @@ module WTS
 			@config[:mentionsSinceId] = id
 		end
 		
+		def dmSinceId
+			@config[:dmSinceId]
+		end
+		
+		def dmSinceId=(id)
+			@config[:dmSinceId] = id
+		end
+		
 		def announcementTerms
 			@config[:announcementTerms]
 		end

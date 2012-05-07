@@ -24,7 +24,7 @@ end
 
 #
 # Parameters:
-#	tweet object
+#	tweet or dm object
 #
 # Returns:
 #	WTSObserver object representing location associated with tweet,
@@ -41,7 +41,7 @@ def parseTweetPlaceTag(tweet)
 			geo.lon = geocode[0].longitude
 			geo.name = "\"#{geoquery}\""
 		end
-	elsif (tweet.geo != nil)
+	elsif (tweet.methods.include?('geo') && tweet.geo != nil)
 		geo = WTSObserver.new
 		geo.lat = tweet.geo.latitude
 		geo.lon = tweet.geo.longitude
@@ -51,7 +51,7 @@ def parseTweetPlaceTag(tweet)
 		else
 			geo.name = "#{user}'s coordinates"
 		end
-	elsif (tweet.place != nil)
+	elsif (tweet.methods.include?('place') && tweet.place != nil)
 		geo = WTSObserver.new
 		bbox = tweet.place.bounding_box.coordinates[0]
 		geo.lat = (bbox[0][1] + bbox[2][1]) / 2.0
@@ -217,8 +217,8 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 	end
 
 	# return complete reply text
-	reply_text = format "@%s When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
-			user_name, satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
+	reply_text = format "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
+			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
 
 end
 
@@ -272,12 +272,13 @@ end
 #	suppressReplyMarker, 
 #	selectedSatellites, array of satellite names to respond to
 #		(if selectedSatellites is empty, respond to any satellite name in catalog)
+#	replyByDM, if true, send a dm instead of posting an status update
 #
 # Returns:
 #	number of responses posted to tweet. (Maybe be zero if no satellite names
 #		were matched, or more than one if there were multiple matches)
 #
-def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, suppressReplyMarker, selectedSatellites=[])
+def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userName, location, suppressReplyMarker, selectedSatellites=[], replyByDM=false)
 	
 	if selectedSatellites.empty?
 		selectedSatellites = catalog.entries
@@ -308,7 +309,11 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 			if $testmode
 				puts response
 			else
-				twitter.update(response, :in_reply_to_status_id => tweetId)
+				if replyByDM
+					twitter.direct_message_create(userName, response)
+				else
+					twitter.update(format("@%s %s", userName, response), :in_reply_to_status_id => tweetId)
+				end
 			end
 			
 			responseCount += 1
@@ -391,6 +396,34 @@ def respondToMentions(config, catalog, twitter)
 end
 
 #
+# Parameter:
+#	config object
+#	catalog object
+#	twitter connection
+#
+# Results:
+#	sends replies to dms
+#
+# Returns:
+#	id of most recent dm
+#
+def respondToDMs(config, catalog, twitter)
+	max = config.dmSinceId
+	begin
+		dms = twitter.direct_messages(:since_id => config.dmSinceId)
+		dms.each do |dm|
+			if dm.id > max then max = dm.id end
+			p dm
+			respondToContent(catalog, twitter, dm.text, dm.id, dm.created_at.utc,
+					dm.sender.screen_name, parseTweetPlaceTag(dm), false, [], true)
+		end
+	rescue Twitter::Error => e
+		puts STDERR, e
+	end
+	return max
+end
+
+#
 # Preferably, do not show reply-time location marker for these responses.
 # (Similar to #time queries and spontaneous "solo" location announcements.)
 #
@@ -462,6 +495,7 @@ def parseCommandLineOptions
 		:report => false,
 		:mentions => false,
 		:searches => false,
+		:dm => false,
 		:tweet => 0};
 	
 	op = OptionParser.new
@@ -478,6 +512,10 @@ def parseCommandLineOptions
 	
 	op.on("--searches") do |v|
 		options[:searches] = true
+	end
+	
+	op.on("--dm") do |v|
+		options[:dm] = true
 	end
 	
 	op.on("--tweet ID", Integer) do |v|
@@ -513,6 +551,10 @@ end
 
 if options[:searches]
 	config.searchesSinceId = respondToSearches(config, catalog, twitter)
+end
+
+if options[:dm]
+	config.dmSinceId = respondToDMs(config, catalog, twitter)
 end
 
 if options[:tweet] != 0
