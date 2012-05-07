@@ -413,7 +413,6 @@ def respondToDMs(config, catalog, twitter)
 		dms = twitter.direct_messages(:since_id => config.dmSinceId)
 		dms.each do |dm|
 			if dm.id > max then max = dm.id end
-			p dm
 			respondToContent(catalog, twitter, dm.text, dm.id, dm.created_at.utc,
 					dm.sender.screen_name, parseTweetPlaceTag(dm), false, [], true)
 		end
