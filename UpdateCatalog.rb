@@ -59,31 +59,10 @@ def formatPhraseList(list)
 	end
 end
 
-def getCatalogUpdateSummary(additions, removals)
-	text = "Satellite catalog updated."
-	if not additions.empty?
-		text += format " Added %s.", formatPhraseList(additions)
-	end
-	if not removals.empty?
-		text += format " Removed %s.", formatPhraseList(removals)
-	end
-	# rough tweet length limit
-	#if text.length > 160
-	#	text = text[0..158] + "…"
-	#end
-	return text
-end
-
 def updateCatalog(config)
 
 	catalog = WTS::WTSCatalog.new
-	
-	# names of all satellites initially present in the catalog, plus
-	# lists to keep track of those that will be added or updated
-	initial = catalog.entries
-	additions = []
-	updates = []
-	
+		
 	config.tleIndexURLs.each do |url|
 		
 		# read the TLE index
@@ -103,12 +82,6 @@ def updateCatalog(config)
 			tleName.gsub!(/\[.+?\]/, "")
 			tleName.rstrip!
 
-			if catalog.include?(tleName)
-				updates.push(tleName)
-			else
-				additions.push(tleName)
-			end
-			
 			catalog[tleName] = tleText
 			
 			line += 3
@@ -116,13 +89,9 @@ def updateCatalog(config)
 		end
 	end
 	
-	# names of satellites to remove (present initially but no longer in indices)
-	removed = initial - (updates + additions)
-	removed.each {|oldKey| catalog.delete(oldKey)}
-	
 	catalog.save
 	
-	return catalog, additions, removed
+	return catalog
 end
 
 def parseCommandLineOptions
@@ -158,12 +127,10 @@ config = WTS::WTSConfig.new
 # first we need a catalog
 if options[:catalog]
 	# update the catalog contents
-	catalog, additions, removals = updateCatalog(config)
+	catalog = updateCatalog(config)
 else
 	# use the current catalog
 	catalog = WTS::WTSCatalog.new
-	additions = []
-	removals = []
 end
 
 # now we have a catalog; update things that depend on it
