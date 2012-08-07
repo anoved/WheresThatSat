@@ -5,6 +5,7 @@ require 'optparse'
 require 'open-uri'
 require 'cgi'
 require 'pathname'
+require 'logger'
 require 'wtsutil'
 
 def formatAliasList(catalog)
@@ -66,6 +67,7 @@ def updateCatalog(config)
 	config.tleIndexURLs.each do |url|
 		
 		# read the TLE index
+		$log.info("Retrieving #{url}")
 		index = open url
 		content = index.read.split("\r\n")
 		index.close
@@ -81,7 +83,8 @@ def updateCatalog(config)
 			tleName.gsub!(/\(.+?\)/, "")
 			tleName.gsub!(/\[.+?\]/, "")
 			tleName.rstrip!
-
+			
+			$log.debug(" #{tleName}")
 			catalog[tleName] = tleText
 			
 			line += 3
@@ -98,7 +101,8 @@ def parseCommandLineOptions
 	
 	options = {
 		:catalog => false,
-		:webpage => ''};
+		:webpage => '',
+		:verbose => false};
 	
 	op = OptionParser.new
 	
@@ -108,6 +112,10 @@ def parseCommandLineOptions
 	
 	op.on("--webpage PATH", String) do |v|
 		options[:webpage] = v
+	end
+	
+	op.on("--verbose") do |v|
+		options[:verbose] = true
 	end
 	
 	begin
@@ -123,18 +131,24 @@ end
 
 options = parseCommandLineOptions
 config = WTS::WTSConfig.new
+$log = Logger.new(STDOUT)
 
-# first we need a catalog
+if options[:verbose]
+	$log.level = Logger::DEBUG
+else
+	$log.level = Logger::WARN
+end
+
 if options[:catalog]
-	# update the catalog contents
+	$log.info("Updating catalog")
 	catalog = updateCatalog(config)
 else
-	# use the current catalog
+	$log.info("Using existing catalog")
 	catalog = WTS::WTSCatalog.new
 end
 
-# now we have a catalog; update things that depend on it
 if options[:webpage] != ''
+	$log.info("Updating #{options[:webpage]}")
 	pageText = formatCatalogPage(catalog, getCatalogPageTemplate())
 	File.open(options[:webpage], 'w') do |file|
 		file.write(pageText)
