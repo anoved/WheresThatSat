@@ -12,6 +12,7 @@ require 'twitter'
 require 'cgi'
 require 'geocoder'
 require 'wtsutil'
+require 'encoded_polyline'
 
 #
 # Represents observer location (name and coordinates)
@@ -191,9 +192,8 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 	url += format '&t1=%d&t2=%d', trace_start_time, trace_end_time
 	trace_cmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle_data, trace_start_time, trace_end_time
 	trace_data = goGoGTG(trace_cmd)
-	trace_data.each do |point|
-		url += format '&ll=%.4f,%.4f', point[1], point[2]
-	end
+	trace_data.collect! {|point| [point[1].to_f, point[2].to_f]}
+	url += format '&points=%s', CGI.escape(EncodedPolyline.encode_points(trace_data, 4))
 	
 	# observer
 	if geo != nil then url += format '&ol=%.4f,%.4f&on=%s', geo.lat, geo.lon, CGI.escape(geo.name) end
@@ -243,11 +243,10 @@ def heresThisSat(sat, tle, timestamp)
 	startTime = timestamp - (5 * 60)
 	endTime = timestamp + (5 * 60)
 	url += format '&t1=%d&t2=%d', startTime, endTime
-	traceCmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle, startTime, endTime
-	traceData = goGoGTG(traceCmd)
-	traceData.each do |point|
-		url += format '&ll=%.4f,%.4f', point[1], point[2]
-	end
+	trace_cmd = format '--tle "%s" --format csv --start "%d" --end "%d" --interval 1m', tle, startTime, endTime
+	trace_data = goGoGTG(trace_cmd)
+	trace_data.collect! {|point| [point[1].to_f, point[2].to_f]}
+	url += format '&points=%s', CGI.escape(EncodedPolyline.encode_points(trace_data, 4))
 	
 	# marker
 	markerCmd = format '--tle "%s" --format csv --start "%d" --steps 1 --attributes altitude velocity heading', tle, timestamp
