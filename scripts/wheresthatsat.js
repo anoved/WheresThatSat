@@ -45,12 +45,13 @@ function MSIERotationFilter(heading) {
 //
 // Parameters:
 //    encoded (compressed polyline string)
+//    precision (decimal precision to decode)
 //
 // Returns:
 //    array of alternating lat/lon coordinates
 //
-function DecompressPoints (encoded) {
-   precision = Math.pow(10, -5);
+function DecompressPoints(encoded, precision) {
+   precision = Math.pow(10, -precision);
    var len = encoded.length, index=0, lat=0, lng = 0, array = [];
    while (index < len) {
       var b, shift = 0, result = 0;
@@ -399,7 +400,7 @@ function PlotGroundTrackFromCoordinateParameters(map, coordinateParameters) {
 function PlotGroundTrackFromEncodedPolyline(map, pointsParameter) {
 	var coordinateList = [];
 	var extent = new google.maps.LatLngBounds();
-	var points = DecompressPoints(pointsParameter);
+	var points = DecompressPoints(pointsParameter, 4);
 	for (var i = 0; i < points.length; i += 2) {
 		var point = new google.maps.LatLng(points[i], points[i + 1]);
 		extent.extend(point);
