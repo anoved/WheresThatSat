@@ -398,7 +398,7 @@ function PlotGroundTrackFromCoordinateParameters(map, coordinateParameters) {
 //
 function PlotGroundTrackFromEncodedPolyline(map, pointsParameter) {
 	var coordinateList = [];
-	var extent = new.google.maps.LatLngBounds();
+	var extent = new google.maps.LatLngBounds();
 	var points = DecompressPoints(pointsParameter);
 	for (var i = 0; i < points.length; i += 2) {
 		var point = new google.maps.LatLng(points[i], points[i + 1]);
