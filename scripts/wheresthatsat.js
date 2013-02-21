@@ -38,6 +38,45 @@ function MSIERotationFilter(heading) {
 }
 
 //
+// Decode a compressed polyline coordinate list. Five-digit precision assumed.
+//
+// Lifted directly from the MapQuest "Compressed Lat/Lng Encoding/Decoding"
+// sample source code at http://open.mapquestapi.com/common/encodedecode.html
+//
+// Parameters:
+//    encoded (compressed polyline string)
+//
+// Returns:
+//    array of alternating lat/lon coordinates
+//
+function DecompressPoints (encoded) {
+   precision = Math.pow(10, -5);
+   var len = encoded.length, index=0, lat=0, lng = 0, array = [];
+   while (index < len) {
+      var b, shift = 0, result = 0;
+      do {
+         b = encoded.charCodeAt(index++) - 63;
+         result |= (b & 0x1f) << shift;
+         shift += 5;
+      } while (b >= 0x20);
+      var dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+      shift = 0;
+      result = 0;
+      do {
+         b = encoded.charCodeAt(index++) - 63;
+         result |= (b & 0x1f) << shift;
+         shift += 5;
+      } while (b >= 0x20);
+      var dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+      array.push(lat * precision);
+      array.push(lng * precision);
+   }
+   return array;
+}
+
+//
 // Parameters:
 //   heading (degrees in range 0 <= heading <= 360)
 //
@@ -321,6 +360,8 @@ function PlotSatelliteLocation(info) {
 }
 
 //
+// Retained for compatibility with original multiple-"ll"-parameter links.
+//
 // Parameters:
 //   map (basemap for plot)
 //   coordinateParameters (array of strings of format "latitude,longitude")
@@ -331,7 +372,7 @@ function PlotSatelliteLocation(info) {
 // Returns:
 //   LatLngBounds object representing extent of ground track
 // 
-function PlotGroundTrack(map, coordinateParameters) {
+function PlotGroundTrackFromCoordinateParameters(map, coordinateParameters) {
 	var coordinateList = [];
 	var extent = new google.maps.LatLngBounds();
 	for (var i = 0; i < coordinateParameters.length; i++) {
@@ -340,15 +381,54 @@ function PlotGroundTrack(map, coordinateParameters) {
 		extent.extend(point);
 		coordinateList.push(point);
 	}
-	var groundTrack = new google.maps.Polyline({
+	PlotGroundTrack(map, coordinateList);
+	return extent;
+}
+
+//
+// Parameters:
+//   map (basemap for plot)
+//   pointsParameter (compressed polyline string)
+//
+// Results:
+//   creates ground track polyline on map
+//
+// Returns:
+//   LatLngBounds object represent extent of ground track
+//
+function PlotGroundTrackFromEncodedPolyline(map, pointsParameter) {
+	var coordinateList = [];
+	var extent = new.google.maps.LatLngBounds();
+	var points = DecompressPoints(pointsParameter);
+	for (var i = 0; i < points.length; i += 2) {
+		var point = new google.maps.LatLng(points[i], points[i + 1]);
+		extent.extend(point);
+		coordinateList.push(point);
+	}
+	PlotGroundTrack(map, coordinateList);
+	return extent;
+}
+
+//
+// Parameters:
+//   map (basemap for plot)
+//   coordinateList (array of LatLng points)
+//
+// Results:
+//   creates ground track polyline on map
+//
+// Returns:
+//   Polyline object representing ground track
+//
+function PlotGroundTrack(map, coordinateList) {
+	return (new google.maps.Polyline({
 		path: coordinateList,
 		strokeOpacity: 0.6,
 		strokeWeight: 8,
 		strokeColor: "#008800",
 		geodesic: true,
 		clickable: false,
-		map: map});
-	return extent;
+		map: map}));
 }
 
 //
@@ -414,7 +494,7 @@ function initialize() {
 	var tweetID = q.value('ut');
 		
 	// Fundamental feature: ground track
-	if (q.exists('ll') && q.exists('t1') && q.exists('t2')) {
+	if ((q.exists('points') || q.exists('ll')) && q.exists('t1') && q.exists('t2')) {
 		
 		// Display the sidebar
 		rightpanel.style.width = "250px";
@@ -425,7 +505,11 @@ function initialize() {
 		var traceEndTime   = new Date(parseInt(q.value('t2'), 10) * 1000);
 		
 		// Plot the ground track on the map
-		var traceExtent = PlotGroundTrack(map, q.values('ll'));
+		if (q.exists('points')) {
+			var traceExtent = PlotGroundTrackFromEncodedPolyline(map, q.value('points'));
+		} else {
+			var traceExtent = PlotGroundTrackFromCoordinateParameters(map, q.values('ll'));
+		}
 
 		// Assemble and display ground track description
 		var searchlink = 'http://nssdc.gsfc.nasa.gov/nmc/spacecraftSearch.do?spacecraft=' + escape(satelliteName);
