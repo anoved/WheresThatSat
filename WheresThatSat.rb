@@ -537,7 +537,7 @@ end
 options = parseCommandLineOptions
 config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
-twitter = Twitter.new(config.login)
+twitter = Twitter::Client.new(config.login)
 
 if options[:report]
 	postRandomReport(config, catalog, twitter)
