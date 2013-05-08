@@ -1,11 +1,5 @@
 #!/usr/bin/env ruby
 
-$testmode = false
-if (ARGV.length == 1 && ARGV[0] == 'test')
-	$testmode = true
-	puts "Test mode"
-end
-
 require 'rubygems'
 require 'optparse'
 require 'twitter'
@@ -324,16 +318,12 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
 					hasTimeTag, location)
 			
-			if $testmode
-				puts response
+			if replyByDM
+				twitter.direct_message_create(userName, response)
 			else
-				if replyByDM
-					twitter.direct_message_create(userName, response)
-				else
-					twitter.update(format("@%s %s", userName, response), :in_reply_to_status_id => tweetId)
-				end
+				twitter.update(format("@%s %s", userName, response), :in_reply_to_status_id => tweetId)
 			end
-			
+		
 			$logger.info {"#{userName}, #{tweetId}, #{tweetTimestamp}, #{responseTimestamp}, \"#{response}\""}
 			responseCount += 1
 		end
