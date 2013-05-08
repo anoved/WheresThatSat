@@ -13,6 +13,7 @@ require 'cgi'
 require 'geocoder'
 require 'wtsutil'
 require 'encoded_polyline'
+require 'logger'
 
 #
 # Represents observer location (name and coordinates)
@@ -356,7 +357,7 @@ def respondToSearches(config, catalog, twitter)
 					tweetAuthor, parseTweetPlaceTag(tweet), false, satellite_queries)
 		end
 	rescue Twitter::Error => e
-		puts STDERR, e
+		$logger.error {e}
 	end
 	return max
 end
@@ -389,7 +390,7 @@ def respondToMentions(config, catalog, twitter)
 					tweetAuthor, parseTweetPlaceTag(tweet), false)
 		end
 	rescue Twitter::Error => e
-		puts STDERR, e
+		$logger.error {e}
 	end
 	return max
 end
@@ -416,7 +417,7 @@ def respondToDMs(config, catalog, twitter)
 					dm.sender.screen_name, parseTweetPlaceTag(dm), false, [], true)
 		end
 	rescue Twitter::Error => e
-		puts STDERR, e
+		$logger.error {e}
 	end
 	return max
 end
@@ -438,7 +439,7 @@ def respondToTweet(config, catalog, twitter, tweetId)
 		respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
 				tweetAuthor, parseTweetPlaceTag(tweet), true)
 	rescue Twitter::Error => e
-		puts STDERR, e
+		$logger.error {e}
 	end
 end
 
@@ -478,7 +479,7 @@ def postReport(config, catalog, twitter, satelliteName)
 	begin
 		twitter.update(report)
 	rescue Twitter::Error => e
-		puts STDERR, e
+		$logger.error {e}
 	end
 end
 
@@ -527,12 +528,15 @@ def parseCommandLineOptions
 	begin
 		op.parse!
 	rescue OptionParser::ParseError => err
-		puts STDERR, err
+		$logger.fatal {err}
 		exit 1
 	end
 	
 	return options
 end
+
+$logger = Logger.new('config/wheresthatsat.log', 0, 1024000)
+$logger.level = Logger::INFO
 
 options = parseCommandLineOptions
 config = WTS::WTSConfig.new
