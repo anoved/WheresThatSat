@@ -36,9 +36,12 @@ def parseTweetPlaceTag(tweet)
 			geo.lat = geocode[0].latitude
 			geo.lon = geocode[0].longitude
 			geo.name = "\"#{geoquery}\""
-		#else
+		else
 			# there was a #place tag, but the argument could not be geocoded
+			raise "Sorry, I can't locate that #place."
 		end
+	elsif (tweet.text.match(/\#place/i))
+		raise "Sorry, your #place tag is missing a quoted argument."
 	elsif (tweet.methods.include?('geo') && tweet.geo != nil)
 		geo = WTSObserver.new
 		geo.lat = tweet.geo.latitude
@@ -362,8 +365,16 @@ def respondToSearches(config, catalog, twitter)
 			# skip any results that refer to us: they're handled as Mentions
 			if tweet.text.match(/@WheresThatSat/i) then next end
 			
+			begin
+				geo = parseTweetPlaceTag(tweet)
+			rescue RuntimeError => err
+				twitter.update(format("@%s %s", tweetAuthor, err), :in_reply_to_status_id => tweet.id)
+				$logger.info {"#{tweetAuthor}, #{tweet.id}, #{tweet.created_at.utc}, \"#{err}\""}
+				next
+			end
+			
 			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-					tweetAuthor, parseTweetPlaceTag(tweet), false, satellite_queries)
+					tweetAuthor, geo, false, satellite_queries)
 		end
 	rescue Twitter::Error => e
 		$logger.error {e}
@@ -395,8 +406,16 @@ def respondToMentions(config, catalog, twitter)
 			# ignore mentions that aren't actually direct @replies.
 			if !tweet.text.match(/^@WheresThatSat/i) then next end
 			
+			begin
+				geo = parseTweetPlaceTag(tweet)
+			rescue RuntimeError => err
+				twitter.update(format("@%s %s", tweetAuthor, err), :in_reply_to_status_id => tweet.id)
+				$logger.info {"#{tweetAuthor}, #{tweet.id}, #{tweet.created_at.utc}, \"#{err}\""}
+				next
+			end
+			
 			respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-					tweetAuthor, parseTweetPlaceTag(tweet), false)
+					tweetAuthor, geo, false)
 		end
 	rescue Twitter::Error => e
 		$logger.error {e}
@@ -422,8 +441,17 @@ def respondToDMs(config, catalog, twitter)
 		dms = twitter.direct_messages(:since_id => config.dmSinceId)
 		dms.each do |dm|
 			if dm.id > max then max = dm.id end
+			
+			begin
+				geo = parseTweetPlaceTag(dm)
+			rescue RuntimeError => err
+				twitter.direct_message_create(dm.sender.screen_name, err)
+				$logger.info {"#{dm.sender.screen_name}, #{dm.id}, #{dm.created_at.utc}, \"#{err}\""}
+				next
+			end
+			
 			respondToContent(catalog, twitter, dm.text, dm.id, dm.created_at.utc,
-					dm.sender.screen_name, parseTweetPlaceTag(dm), false, [], true)
+					dm.sender.screen_name, geo, false, [], true)
 		end
 	rescue Twitter::Error => e
 		$logger.error {e}
@@ -445,8 +473,17 @@ def respondToTweet(config, catalog, twitter, tweetId)
 	begin
 		tweet = twitter.status(tweetId)
 		tweetAuthor = getTweetAuthor(tweet)
+		
+		begin
+			geo = parseTweetPlaceTag(tweet)
+		rescue RuntimeError => err
+			twitter.update(format("@%s %s", tweetAuthor, err), :in_reply_to_status_id => tweet.id)
+			$logger.info {"#{tweetAuthor}, #{tweet.id}, #{tweet.created_at.utc}, \"#{err}\""}
+			return
+		end
+		
 		respondToContent(catalog, twitter, tweet.text, tweet.id, tweet.created_at.utc,
-				tweetAuthor, parseTweetPlaceTag(tweet), true)
+				tweetAuthor, geo, true)
 	rescue Twitter::Error => e
 		$logger.error {e}
 	end
