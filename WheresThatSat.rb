@@ -316,6 +316,7 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 				end
 			end
 			
+			$logger.info {"#{userName}, #{tweetId}, #{tweetTimestamp}, #{responseTimestamp}, \"#{response}\""}
 			responseCount += 1
 		end
 	end
@@ -478,6 +479,7 @@ def postReport(config, catalog, twitter, satelliteName)
 	report = heresThisSat(satelliteName, catalog[satelliteName], Time.now.utc.to_i)
 	begin
 		twitter.update(report)
+		$logger.info {"\"#{report}\""}
 	rescue Twitter::Error => e
 		$logger.error {e}
 	end
