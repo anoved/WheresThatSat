@@ -42,6 +42,8 @@ def parseTweetPlaceTag(tweet)
 			geo.lat = geocode[0].latitude
 			geo.lon = geocode[0].longitude
 			geo.name = "\"#{geoquery}\""
+		#else
+			# there was a #place tag, but the argument could not be geocoded
 		end
 	elsif (tweet.methods.include?('geo') && tweet.geo != nil)
 		geo = WTSObserver.new
@@ -89,6 +91,8 @@ def parseTweetTimeTag(tweetText, tweetTimestamp)
 				offset *= -1
 			end
 			return tweetTimestamp + offset, true
+		#else
+			# there was a #time tag, but the format was unrecognized
 		end
 	end
 	return tweetTimestamp, false
