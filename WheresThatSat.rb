@@ -91,9 +91,12 @@ def parseTweetTimeTag(tweetText, tweetTimestamp)
 				offset *= -1
 			end
 			return tweetTimestamp + offset, true
-		#else
+		else
 			# there was a #time tag, but the format was unrecognized
+			raise "Sorry, I can't parse that #time value."
 		end
+	elsif (tweetText.match(/\#time/i))
+		raise "Sorry, your #time tag is missing a quoted argument."
 	end
 	return tweetTimestamp, false
 end
@@ -300,7 +303,18 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 			
 			# parseTweetPlaceTag is called by the caller, since it may need to
 			# access other tweet properties (such as geo or place) besides text
-			tweetTimestamp, hasTimeTag = parseTweetTimeTag(tweetText, tweetTimestamp)
+			begin
+				tweetTimestamp, hasTimeTag = parseTweetTimeTag(tweetText, tweetTimestamp)
+			rescue RuntimeError => err
+				if replyByDM
+					twitter.direct_message_create(userName, err)
+				else
+					twitter.update(format("@%s %s", userName, err), :in_reply_to_status_id => tweetId)
+				end
+				$logger.info {"#{userName}, #{tweetId}, #{tweetTimestamp}, #{responseTimestamp}, \"#{err}\""}
+				responseCount += 1
+				next
+			end
 			
 			if suppressReplyMarker
 				hasTimeTag = true
