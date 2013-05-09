@@ -564,11 +564,15 @@ function initialize() {
 			var intro = '';
 			var future = false;
 			var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
+			var mentionlink = '<a href="' + tweetlink + '">mentioned</a>' ;
+			if (q.exists('dm') && parseInt(q.value('dm'), 10) == 1) {
+				mentionlink = 'mentioned '
+			}				
 			if (no_response_marker) {
 				if (userName == "WheresThatSat") {
 					intro = '<a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
 				} else {
-					intro = 'You <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
+					intro = 'You ' + mentionLink + satelliteName + '. On ' + FormatTimestamp(timestamp) + ', it ';
 				}
 				if (timestamp > Date.now()) {
 					intro += 'will be';
@@ -578,7 +582,7 @@ function initialize() {
 				if (userName == 'WheresThatSat') {
 					intro = 'When <a href="http://twitter.com/WheresThatSat">@WheresThatSat</a> mentioned ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
 				} else {
-					intro = 'When you <a href="' + tweetlink + '">mentioned</a> ' + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
+					intro = 'When you ' + mentionLink + satelliteName + ' on ' + FormatTimestamp(timestamp) + ', it was';
 				}
 			}
 			
