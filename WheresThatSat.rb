@@ -187,9 +187,9 @@ end
 # Returns:
 #	string containing tweet response text (including map link)
 #
-def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo)
+def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo, dm=false)
 	
-	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d&si=%s', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id, CGI.escape(getTLEIdentifier(tle_data))
+	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d&si=%s&dm=%s', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id, CGI.escape(getTLEIdentifier(tle_data)), dm ? '1' : '0'
 	
 	# trace
 	trace_start_time = mention_time - (4 * 60)
@@ -242,7 +242,7 @@ end
 def heresThisSat(sat, tle, timestamp)
 	
 	# no username or tweet id (for announcements, although appropriate for --tweet...)
-	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=WheresThatSat&ut=0&si=%s', CGI.escape(sat), CGI.escape(getTLEIdentifier(tle))
+	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=WheresThatSat&ut=0&si=%s&dm=0', CGI.escape(sat), CGI.escape(getTLEIdentifier(tle))
 
 	# trace
 	startTime = timestamp - (5 * 60)
@@ -319,7 +319,7 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 			
 			response = theresThatSat(satelliteName, catalog[satelliteName],
 					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
-					hasTimeTag, location)
+					hasTimeTag, location, replyByDM)
 			
 			if replyByDM
 				twitter.direct_message_create(userName, response)
