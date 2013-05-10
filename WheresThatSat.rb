@@ -494,26 +494,6 @@ end
 #	config object
 #	catalog object
 #	twitter connection
-#
-# Results:
-#	random satellite location report is posted to Twitter
-#
-def postRandomReport(config, catalog, twitter)
-	terms = config.announcementTerms
-	return if terms.empty?
-	
-	# note terms must currently be defined exactly as listed in catalog;
-	# making this lookup case/hyphen insensitive would be convenient
-	sat = terms[rand(terms.length)]
-	
-	postReport(config, catalog, twitter, sat)
-end
-
-#
-# Parameters:
-#	config object
-#	catalog object
-#	twitter connection
 #	name of satellite to report
 #
 # Results:
@@ -538,6 +518,7 @@ def parseCommandLineOptions
 	
 	# default options
 	options = {
+		:random => false,
 		:report => false,
 		:mentions => false,
 		:searches => false,
@@ -547,6 +528,10 @@ def parseCommandLineOptions
 	op = OptionParser.new
 	
 	# configure the options
+	
+	op.on("--random") do |v|
+		options[:random] = true
+	end
 	
 	op.on("--report") do |v|
 		options[:report] = true
@@ -590,8 +575,14 @@ config = WTS::WTSConfig.new
 catalog = WTS::WTSCatalog.new
 twitter = Twitter::Client.new(config.login)
 
+if options[:random]
+	# Post a report about a satellite selected at random from the entire catalog.
+	postReport(config, catalog, twitter, catalog.tles.keys[rand(catalog.tles.length)])
+end
+
 if options[:report]
-	postRandomReport(config, catalog, twitter)
+	# Post a report about a satellite selected at random from the subset listed under "announcementTerms".
+	postReport(config, catalog, twitter, config.announcementTerms[rand(config.announcementTerms.length)])
 end
 
 if options[:mentions]
