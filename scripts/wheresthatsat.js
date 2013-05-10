@@ -569,7 +569,7 @@ function initialize() {
 			var intro = '';
 			var future = false;
 			var tweetlink = 'https://twitter.com/' + userName + '/statuses/' + tweetID;
-			var mentionlink = '<a href="' + tweetlink + '">mentioned</a>' ;
+			var mentionlink = '<a href="' + tweetlink + '">mentioned</a> ' ;
 			if (q.exists('dm') && parseInt(q.value('dm'), 10) == 1) {
 				mentionlink = 'mentioned '
 			}				
