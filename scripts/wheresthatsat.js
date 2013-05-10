@@ -549,6 +549,8 @@ function initialize() {
 			// Satellites above 30k km are probably geostationary, so don't bother zooming in.
 			if (parseFloat(q.value('ma')) < 30000) {
 				map.fitBounds(traceExtent);
+			} else {
+				map.panToBounds(traceExtent);
 			}
 			
 			// The absence of a response marker indicates that the
