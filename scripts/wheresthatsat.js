@@ -542,11 +542,14 @@ function initialize() {
 			var obsinfoicon = document.getElementById('observer-icon');
 			AddEventListenerToElement(obsinfoicon, 'click', function() {map.panTo(point);});
 		}
-
-		map.fitBounds(traceExtent);
-
+		
 		// Create marker to represent Mention position.
 		if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
+
+			// Satellites above 30k km are probably geostationary, so don't bother zooming in.
+			if (parseFloat(q.value('ma')) < 30000) {
+				map.fitBounds(traceExtent);
+			}
 			
 			// The absence of a response marker indicates that the
 			// mention marker represents an explicitly specified time
