@@ -169,11 +169,7 @@ module WTS
 		def dmSinceId=(id)
 			@config[:dmSinceId] = id
 		end
-		
-		def announcementTerms
-			@config[:announcementTerms]
-		end
-		
+				
 	end
 	
 end

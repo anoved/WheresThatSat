@@ -519,7 +519,7 @@ def parseCommandLineOptions
 	# default options
 	options = {
 		:random => false,
-		:report => false,
+		:report => nil,
 		:mentions => false,
 		:searches => false,
 		:dm => false,
@@ -533,8 +533,8 @@ def parseCommandLineOptions
 		options[:random] = true
 	end
 	
-	op.on("--report") do |v|
-		options[:report] = true
+	op.on("--report SATELLITE", String) do |v|
+		options[:report] = v
 	end
 	
 	op.on("--mentions") do |v|
@@ -581,8 +581,8 @@ if options[:random]
 end
 
 if options[:report]
-	# Post a report about a satellite selected at random from the subset listed under "announcementTerms".
-	postReport(config, catalog, twitter, config.announcementTerms[rand(config.announcementTerms.length)])
+	# Post a report about a specific satellite.
+	postReport(config, catalog, twitter, options[:report])
 end
 
 if options[:mentions]
