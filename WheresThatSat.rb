@@ -560,6 +560,7 @@ def parseCommandLineOptions
 	begin
 		op.parse!
 	rescue OptionParser::ParseError => err
+		puts STDERR, err.to_s
 		$logger.fatal {err}
 		exit 1
 	end
