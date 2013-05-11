@@ -297,6 +297,9 @@ function IsDefined(v) {
 // Results:
 //   creates sat location map marker and corresponding info panel
 //
+// Returns:
+//   LatLng point of satellite location
+//
 function PlotSatelliteLocation(info) {
 	
 	// Parse basic information about the satellite at this position
@@ -358,6 +361,8 @@ function PlotSatelliteLocation(info) {
 	// Click icon in caption to pan to marker on map
 	var infoicon = info.doc.getElementById(info.id + '-icon');
 	AddEventListenerToElement(infoicon, 'click', function() {info.map.panTo(point);});
+	
+	return point;
 }
 
 //
@@ -546,13 +551,6 @@ function initialize() {
 		// Create marker to represent Mention position.
 		if (q.exists('ml') && q.exists('ma') && q.exists('mh') && q.exists('ms') && q.exists('mt')) {
 
-			// Satellites above 30k km are probably geostationary, so don't bother zooming in.
-			if (parseFloat(q.value('ma')) < 30000) {
-				map.fitBounds(traceExtent);
-			} else {
-				map.panToBounds(traceExtent);
-			}
-			
 			// The absence of a response marker indicates that the
 			// mention marker represents an explicitly specified time
 			var no_response_marker = true;
@@ -592,7 +590,7 @@ function initialize() {
 			}
 			
 			// Fling a bunch of parameters at the map and see what sticks!
-			PlotSatelliteLocation({
+			mentionMarkerLocation = PlotSatelliteLocation({
 					altitude: q.value('ma'),
 					heading: q.value('mh'),
 					speed: q.value('ms'),
@@ -609,6 +607,13 @@ function initialize() {
 					id: 'mention',
 					captionIntro: intro,
 					future: future});
+			
+			// Satellites above 30k km are probably geostationary, so don't bother zooming in.
+			if (parseFloat(q.value('ma')) < 30000) {
+				map.fitBounds(traceExtent);
+			} else {
+				map.setCenter(mentionMarkerLocation);
+			}
 					
 			// Create marker to represent Reply position, if specified.
 			if (!no_response_marker) {
