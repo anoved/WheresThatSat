@@ -219,10 +219,13 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 		r = goGoGTG(reply_cmd)[0]
 		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
 		if geo != nil then url += format '&ri=%d&re=%.2f&rz=%.2f&ro=%.2f', r[6], r[7], r[8], r[9] end
+		reply_format = "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s"
+	else
+		reply_format = "At the given time, %s was or will be above %.4f%s %.4f%s. More info: %s"
 	end
 
 	# return complete reply text
-	reply_text = format "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s",
+	reply_text = format reply_format,
 			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
 
 end
