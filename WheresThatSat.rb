@@ -219,15 +219,20 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 		r = goGoGTG(reply_cmd)[0]
 		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
 		if geo != nil then url += format '&ri=%d&re=%.2f&rz=%.2f&ro=%.2f', r[6], r[7], r[8], r[9] end
-		reply_format = "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: %s"
+		reply_format = "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: "
 	else
-		reply_format = "At the given time, %s was or will be above %.4f%s %.4f%s. More info: %s"
+		reply_format = "At the given time, %s was or will be above %.4f%s %.4f%s. More info: "
 	end
 
 	# return complete reply text
 	reply_text = format reply_format,
-			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W", url
-
+			satellite_name, mention_lat.abs, mention_lat >= 0 ? "N" : "S", mention_lon.abs, mention_lon >= 0 ? "E" : "W"
+	
+	if (reply_text.length > 118)
+		reply_text = reply_text[0..115] + "… "
+	end
+	
+	return reply_text + url
 end
 
 #
@@ -264,7 +269,18 @@ def heresThisSat(sat, tle, timestamp)
 	mlon = m[2].to_f
 	url += format '&ml=%.4f,%.4f&ma=%.2f&ms=%.2f&mh=%.2f&mt=%d', mlat, mlon, m[3].to_f, m[4].to_f, m[5].to_f, timestamp
 	
-	format "Right now, %s is moving %s at %.2f km/s, %.2f km above %.4f%s %.4f%s. Here's a map: %s", sat, getDirectionOfHeading(m[5].to_f), m[4].to_f, m[3].to_f, mlat.abs, mlat >= 0 ? "N" : "S", mlon.abs, mlon >= 0 ? "E" : "W", url
+	report = format "Right now, %s is moving %s at %.2f km/s, %.2f km above %.4f%s %.4f%s. Here's a map: %s", sat, getDirectionOfHeading(m[5].to_f), m[4].to_f, m[3].to_f, mlat.abs, mlat >= 0 ? "N" : "S", mlon.abs, mlon >= 0 ? "E" : "W", url
+	
+	report = format "Right now, %s is moving %s at %.2f km/s, %.2f km above %.4f%s %.4f%s. Here's a map: ", sat, getDirectionOfHeading(m[5].to_f), m[4].to_f, m[3].to_f, mlat.abs, mlat >= 0 ? "N" : "S", mlon.abs, mlon >= 0 ? "E" : "W"
+	
+	# The auto-shortened URL will consume 22 characters.
+	# (Equivalently, if report.length + 22 > 140)
+	if (report.length > 118)
+		# twitter counts characters, not bytes, so a unicode ellipsis is fine.
+		report = report[0..115] + "… "
+	end
+	
+	return report + url
 end
 
 #
@@ -509,7 +525,7 @@ def postReport(config, catalog, twitter, satelliteName)
 		twitter.update(report)
 		$logger.info {"\"#{report}\""}
 	rescue Twitter::Error => e
-		$logger.error {e}
+		$logger.error {"#{e}, \"#{report}\""}
 	end
 end
 
