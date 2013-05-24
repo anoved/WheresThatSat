@@ -183,11 +183,13 @@ end
 #	response_time - integer unix timestamp of reply time.
 #	explicit_mention_time - true if user specified mention time
 #	is_geo, boolean whether observer location is defined (true if yes)
+#	dm, boolean whether to post reply as a direct message (default false)
+#	reply_format, format string containing appropriate reply text template
 #
 # Returns:
 #	string containing tweet response text (including map link)
 #
-def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo, dm=false)
+def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, response_time, explicit_mention_time, geo, dm, reply_format)
 	
 	url = format 'http://wheresthatsat.com/map.html?sn=%s&un=%s&ut=%d&si=%s&dm=%s', CGI.escape(satellite_name), CGI.escape(user_name), tweet_id, CGI.escape(getTLEIdentifier(tle_data)), dm ? '1' : '0'
 	
@@ -219,9 +221,6 @@ def theresThatSat(satellite_name, tle_data, user_name, tweet_id, mention_time, r
 		r = goGoGTG(reply_cmd)[0]
 		url += format '&rl=%.4f,%.4f&ra=%.2f&rs=%.2f&rh=%.2f&rt=%d', r[1], r[2], r[3], r[4], r[5], response_time
 		if geo != nil then url += format '&ri=%d&re=%.2f&rz=%.2f&ro=%.2f', r[6], r[7], r[8], r[9] end
-		reply_format = "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: "
-	else
-		reply_format = "At the given time, %s was or will be above %.4f%s %.4f%s. More info: "
 	end
 
 	# return complete reply text
@@ -332,13 +331,18 @@ def respondToContent(catalog, twitter, tweetText, tweetId, tweetTimestamp, userN
 				next
 			end
 			
+			reply_format = "When you mentioned %s, it was above %.4f%s %.4f%s. Here's more info: "
+			if hasTimeTag
+				reply_format = "At the given time, %s was or will be above %.4f%s %.4f%s. More info: "
+			end
 			if suppressReplyMarker
+				reply_format = "At the time of your tweet, %s was above %.4f%s %.4f%s. More info: "
 				hasTimeTag = true
 			end
 			
 			response = theresThatSat(satelliteName, catalog[satelliteName],
 					userName, tweetId, tweetTimestamp.to_i, responseTimestamp.to_i,
-					hasTimeTag, location, replyByDM)
+					hasTimeTag, location, replyByDM, reply_format)
 			
 			if replyByDM
 				twitter.direct_message_create(userName, response)
