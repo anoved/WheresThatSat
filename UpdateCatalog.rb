@@ -47,19 +47,6 @@ def formatCatalogPage(catalog, template)
 	return text
 end
 
-def formatPhraseList(list)
-	if list.empty?
-		return ""
-	end
-	if list.length == 1
-		format "%s", list[0]
-	elsif list.length == 2
-		format "%s and %s", list[0], list[1]
-	else
-		format "%s, and %s", list[0..-2].join(', '), list[-1]
-	end
-end
-
 def updateCatalog(config)
 
 	catalog = WTS::WTSCatalog.new
