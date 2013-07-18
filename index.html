@@ -5,7 +5,6 @@
 	<title>Where's That Sat?</title>
 	<link rel="stylesheet" type="text/css" href="styles/wheresthatsat.css" />
 	<script charset="utf-8" src="http://widgets.twimg.com/j/2/widget.js"></script>
-	<script type="text/javascript" src="http://platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
 	<div id="header">
@@ -26,33 +25,8 @@
 		<div style="float:left;padding-right:10px;width:290px;" id="leftcol">
 
 			<div id="tweet" class="section" style="padding-bottom:20px;">
-			<script>
-			new TWTR.Widget({
-			  version: 2,
-			  type: 'profile',
-			  rpp: 10,
-			  interval: 30000,
-			  width: 288,
-			  height: 450,
-			  theme: {
-				shell: {
-				  background: '#1a5cbf',
-				  color: '#ffffff'
-				},
-				tweets: {
-				  background: '#ffffff',
-				  color: '#000000',
-				  links: '##1a5cbf'
-				}
-			  },
-			  features: {
-				scrollbar: true,
-				loop: false,
-				live: true,
-				behavior: 'all'
-			  }
-			}).render().setUser('WheresThatSat').start();
-			</script>
+			<a class="twitter-timeline" data-dnt="true" href="https://twitter.com/WheresThatSat" data-widget-id="357842872587927552">Tweets by @WheresThatSat</a>
+			<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
 			</div>
 		
 			<div id="acknowledgements" class="section">
