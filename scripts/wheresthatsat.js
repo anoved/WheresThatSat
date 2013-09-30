@@ -646,8 +646,10 @@ function initialize() {
 		
 		// View at other sites
 		if (q.exists('si')) {
-			var otherCaption = '<p><a href="http://n2yo.com/?s=' + escape(q.value('si')) + '" title="Real Time Satellite Tracking">View current position at N2YO.com&hellip;</a></p>';
+			var otherCaption = '<p>View current position at <a href="http://n2yo.com/?s=' + escape(q.value('si')) + '" title="Real Time Satellite Tracking">N2YO</a> or at <a href="http://heavens-above.com/orbit.aspx?satid=' + escape(q.value('si')) + '">Heavens-Above</a>&hellip;</p>';
 			CreateInfoPanel(document, rightpanel, otherCaption, 'other');
+			
+			
 		}
 		
 		// Display referrer link iff it's a t.co shortlink
